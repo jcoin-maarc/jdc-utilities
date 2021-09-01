@@ -38,13 +38,13 @@ def get_mappings(mappings,substr,mapping_property='name'):
 
 def combine_checkboxes(
     df,
-    greater_than_one_nm,
+    name_if_more_than_one_checked,
     value_of_checked="Checked",
     value_of_none_checked='Not reported'
     ):
     num_checked = (df==value_of_checked).sum()
     if num_checked>1:
-        race_enum = greater_than_one_nm
+        race_enum = name_if_more_than_one_checked
     elif num_checked==0:
         race_enum = value_of_none_checked
     else:
