@@ -11,10 +11,10 @@ def map(df, mappings):
     """Rename vars and/or replace values"""
     
     for var in mappings:
-        df.rename(columns={var: mappings[var]['name']}, inplace=True)
-        if 'values' in mappings[var] and mappings[var]['name'] in df:
-            df[mappings[var]['name']].replace(mappings[var]['values'], inplace=True)
-
+        if 'values' in mappings[var]:
+            df[var].replace(mappings[var]['values'], inplace=True)
+        if 'name' in mappings[var]:
+            df.rename(columns={var: mappings[var]['name']}, inplace=True)
 def to_quarter(datevar):
     
     var = pd.to_datetime(datevar)
