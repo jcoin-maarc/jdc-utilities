@@ -7,16 +7,47 @@ def read_mapfile(mapfile):
     with open(mapfile) as file:
         return yaml.safe_load(file)
 
-def map(df, mapfile):
+def map(df, mappings):
     """Rename vars and/or replace values"""
     
-    map = read_mapfile(mapfile)
-    for var in map:
-        df.rename(columns={var: map[var]['name']}, inplace=True)
-        if 'values' in map[var] and map[var]['name'] in df:
-            df[map[var]['name']].replace(map[var]['values'], inplace=True)
+    for var in mappings:
+        df.rename(columns={var: mappings[var]['name']}, inplace=True)
+        if 'values' in mappings[var] and mappings[var]['name'] in df:
+            df[mappings[var]['name']].replace(mappings[var]['values'], inplace=True)
 
 def to_quarter(datevar):
     
     var = pd.to_datetime(datevar)
     return pd.PeriodIndex(var, freq='Q')
+
+def get_mappings(mappings,substr):
+    '''
+    get a list of remapped names 
+    based on a substring pattern of unmapped names
+
+    returns a list of mapped names
+
+    TODO: specifying whether name or value mapping list
+    '''
+    remapped_name_list = [
+        name
+        for key,name in mappings.items()
+        if substr in key
+    ]
+    return remapped_name_list
+
+def combine_checkboxes(
+    df,
+    greater_than_one_nm,
+    value_of_checked="Checked",
+    value_of_none_checked='Not reported'
+    ):
+    num_checked = (df==value_of_checked).sum()
+    if num_checked>1:
+        race_enum = greater_than_one_nm
+    elif num_checked==0:
+        race_enum = value_of_none_checked
+    else:
+        race_enum = df[[df==value_of_checked].index[0]
+
+    return race_enum
