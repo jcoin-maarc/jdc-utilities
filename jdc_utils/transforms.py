@@ -20,17 +20,17 @@ def to_quarter(datevar):
     var = pd.to_datetime(datevar)
     return pd.PeriodIndex(var, freq='Q')
 
-def get_mappings(mappings,substr):
+def get_mappings(mappings,substr,mapping_property='name'):
     '''
     get a list of remapped names 
     based on a substring pattern of unmapped names
 
     returns a list of mapped names
 
-    TODO: specifying whether name or value mapping list
+    TODO: specifying whether name or value mapping list etc
     '''
     remapped_name_list = [
-        name
+        name[mapping_property]
         for key,name in mappings.items()
         if substr in key
     ]
