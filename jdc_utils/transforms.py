@@ -9,12 +9,14 @@ def read_mapfile(mapfile):
 
 def map(df, mappings):
     """Rename vars and/or replace values"""
-    
     for var in mappings:
-        if 'values' in mappings[var]:
-            df[var].replace(mappings[var]['values'], inplace=True)
-        if 'name' in mappings[var]:
-            df.rename(columns={var: mappings[var]['name']}, inplace=True)
+        if var in df:
+            if 'values' in mappings[var]:
+                df[var].replace(mappings[var]['values'], inplace=True)
+
+            if 'name' in mappings[var]:
+                df.rename(columns={var: mappings[var]['name']}, inplace=True)
+
 def to_quarter(datevar):
     
     var = pd.to_datetime(datevar)
