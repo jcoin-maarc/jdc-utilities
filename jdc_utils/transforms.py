@@ -48,6 +48,6 @@ def combine_checkboxes(
     elif num_checked==0:
         race_enum = value_of_none_checked
     else:
-        race_enum = df[[df==value_of_checked]].index[0]
+        race_enum = df.loc[df==value_of_checked].index[0]
 
     return race_enum
