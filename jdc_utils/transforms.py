@@ -31,12 +31,10 @@ def get_mappings(mappings,substr,mapping_property='name'):
     '''
     remapped_name_list = [
         name[mapping_property]
-        for key,name in mappings
+        for key,name in mappings.items()
         if substr in key
     ]
-    for key,name in mappings:
-        print(name)
-    #return remapped_name_list
+    return remapped_name_list
 
 def combine_checkboxes(
     df,
