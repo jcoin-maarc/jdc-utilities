@@ -36,7 +36,7 @@ def get_mappings(mappings,substr,mapping_property='name'):
     ]
     for key,name in mappings:
         print(name)
-    return remapped_name_list
+    #return remapped_name_list
 
 def combine_checkboxes(
     df,
