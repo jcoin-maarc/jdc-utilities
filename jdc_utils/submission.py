@@ -41,7 +41,8 @@ class Node:
                     invalid = set(df[property].dropna().unique()) - valid
                     sys.exit(f'Value(s) {invalid} not valid for {property}')
     
-    def to_tsv(self, df, path_or_buf, submitter_id=None, constants=None):
+    def to_tsv(self, df, path_or_buf, submitter_id=None, add_suffix=False,
+               constants=None):
         
         data = df.copy()
         if constants:
@@ -59,6 +60,10 @@ class Node:
         if submitter_id:
             data.set_index(submitter_id, inplace=True, verify_integrity=True)
         data.index.rename('submitter_id', inplace=True)
+        
+        if add_suffix:
+            # Unfortunately add_suffix() doesn't apply here
+            data.rename(lambda x: f'{x}_{self.type}', inplace=True)
         
         for link in self.links:
             if link['name'] in data.columns:
