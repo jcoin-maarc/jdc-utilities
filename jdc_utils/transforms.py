@@ -30,7 +30,7 @@ def collapse_checkall(df, columns, checked='Checked',
     var = bcols.idxmax(axis=1).where(bcols.sum(axis=1)==1, multi_checked).\
                                where(bcols.sum(axis=1)>0, none_checked)
     
-    var = var.where((df[columns].notnull().sum(axis=1)==len(df.columns)) |
+    var = var.where((df[columns].notnull().sum(axis=1)==len(columns)) |
                     (var==multi_checked), None)
     
     if labels:
