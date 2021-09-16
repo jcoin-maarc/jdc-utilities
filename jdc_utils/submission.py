@@ -6,9 +6,7 @@ import sys
 
 #manifest used for production deployment
 MANIFEST_URL = 'https://raw.githubusercontent.com/uc-cdis/cdis-manifest/master/jcoin.datacommons.io/manifest.json'
-manifest_json = json.loads(urlopen(MANIFEST_URL).read())
-dictionary_url = manifest_json['global']['dictionary_url']
-dictionary = json.loads(urlopen(dictionary_url).read())
+
 
 class Node:
     
@@ -16,8 +14,9 @@ class Node:
         
         self.type = type
         
-        response = urlopen(DICTIONARY_URL)
-        dictionary = json.loads(response.read())
+        manifest_json = json.loads(urlopen(MANIFEST_URL).read())
+        dictionary_url = manifest_json['global']['dictionary_url']
+        dictionary = json.loads(urlopen(dictionary_url).read())
         
         self.system_properties = dictionary[f'{type}.yaml']['systemProperties']
         self.properties = dictionary[f'{type}.yaml']['properties']
