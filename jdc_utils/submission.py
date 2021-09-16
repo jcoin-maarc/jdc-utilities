@@ -4,8 +4,11 @@ from urllib.request import urlopen
 import json
 import sys
 
-# TODO Replace with version-free link to current dictionary
-DICTIONARY_URL = 'https://dictionary-artifacts.s3.amazonaws.com/jcoin_datadictionary/1.1.1/schema.json'
+#manifest used for production deployment
+MANIFEST_URL = 'https://raw.githubusercontent.com/uc-cdis/cdis-manifest/master/jcoin.datacommons.io/manifest.json'
+manifest_json = json.loads(urlopen(MANIFEST_URL).read())
+dictionary_url = manifest_json['global']['dictionary_url']
+dictionary = json.loads(urlopen(dictionary_url).read())
 
 class Node:
     
