@@ -3,6 +3,7 @@
 from urllib.request import urlopen
 import json
 import sys
+from dictionary import build_schema
 
 #manifest used for production deployment
 MANIFEST_URL = 'https://raw.githubusercontent.com/uc-cdis/cdis-manifest/master/jcoin.datacommons.io/manifest.json'
@@ -22,26 +23,15 @@ class Node:
         self.properties = dictionary[f'{type}.yaml']['properties']
         self.links = dictionary[f'{type}.yaml']['links']
         self.required = dictionary[f'{type}.yaml']['required']
-    
-    def _validate(self, df):
-        
-        exclude = ['type','submitter_id']
-        properties = [p for p in self.properties.keys()
-                      if p not in self.system_properties + exclude]
-        required = [p for p in self.required if p not in exclude]
-        
-        for property in properties:
-            if property in required:
-                if property not in df:
-                    sys.exit(f'Column {property} required but not found')
-                elif df[property].isnull().values.any():
-                    sys.exit(f'Property {property} required but missing in one or more cases')
-            
-            if property in df and 'enum' in self.properties[property]:
-                valid = set(self.properties[property]['enum'])
-                if not set(df[property].dropna().unique()).issubset(valid):
-                    invalid = set(df[property].dropna().unique()) - valid
-                    sys.exit(f'Value(s) {invalid} not valid for {property}')
+        self.unique_keys = dictionary[f'{type}.yaml']['uniqueKeys']
+
+        self.schema = build_schema(
+            self.properties,
+            self.links,
+            self.required,
+            self.unique_keys,
+            self.system_properties
+        )
     
     def to_tsv(self, df, path_or_buf, submitter_id=None, add_suffix=False,
                constants=None):
@@ -50,8 +40,7 @@ class Node:
         if constants:
             for c in constants:
                 data[c] = constants[c]
-        self._validate(data)
-        
+
         exclude = ['type','submitter_id']
         cols = [p for p in self.properties.keys()
                 if p not in self.system_properties + exclude]
@@ -73,4 +62,5 @@ class Node:
                             inplace=True)
         
         data.insert(0, 'type', self.type)
+        self.schema.validate(data)
         data.to_csv(path_or_buf, sep='\t')
