@@ -3,7 +3,7 @@
 from urllib.request import urlopen
 import json
 import sys
-from dictionary import build_schema
+from jdc_utils.dictionary import build_schema,get_dictionary
 
 #manifest used for production deployment
 MANIFEST_URL = 'https://raw.githubusercontent.com/uc-cdis/cdis-manifest/master/jcoin.datacommons.io/manifest.json'
@@ -14,10 +14,7 @@ class Node:
     def __init__(self, type):
         
         self.type = type
-        
-        manifest_json = json.loads(urlopen(MANIFEST_URL).read())
-        dictionary_url = manifest_json['global']['dictionary_url']
-        dictionary = json.loads(urlopen(dictionary_url).read())
+        dictionary = get_dictionary(MANIFEST_URL) #note - full dictionary will be needed for node refs in future versions
         
         self.system_properties = dictionary[f'{type}.yaml']['systemProperties']
         self.properties = dictionary[f'{type}.yaml']['properties']
