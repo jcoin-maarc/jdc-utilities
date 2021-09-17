@@ -4,6 +4,7 @@ from urllib.request import urlopen
 import json
 import sys
 from jdc_utils.dictionary import build_schema,get_dictionary
+from jdc_utils.transforms import map as map_jdc
 
 #manifest used for production deployment
 MANIFEST_URL = 'https://raw.githubusercontent.com/uc-cdis/cdis-manifest/master/jcoin.datacommons.io/manifest.json'
@@ -30,34 +31,12 @@ class Node:
             self.system_properties
         )
     
-    def to_tsv(self, df, path_or_buf, submitter_id=None, add_suffix=False,
-               constants=None):
-        
+    def map_df(self,df,mapfile,to_tsv=False):
         data = df.copy()
-        if constants:
-            for c in constants:
-                data[c] = constants[c]
-
-        exclude = ['type','submitter_id']
-        cols = [p for p in self.properties.keys()
-                if p not in self.system_properties + exclude]
-        if submitter_id:
-            cols.append(submitter_id)
+        map_jdc(data, mapfile)
+        cols = self.schema.columns
         data = data.loc[:,data.columns.isin(cols)]
-        
-        if submitter_id:
-            data.set_index(submitter_id, inplace=True, verify_integrity=True)
-        data.index.rename('submitter_id', inplace=True)
-        
-        if add_suffix:
-            # Unfortunately add_suffix() doesn't apply here
-            data.rename(lambda x: f'{x}_{self.type}', inplace=True)
-        
-        for link in self.links:
-            if link['name'] in data.columns:
-                data.rename(columns={link['name']:f"{link['name']}.submitter_id"},
-                            inplace=True)
-        
-        data.insert(0, 'type', self.type)
-        self.schema.validate(data)
-        data.to_csv(path_or_buf, sep='\t')
+        self.data = data
+        self.validated_data = self.schema.validate(self.data)
+        if to_tsv:
+            self.validated_data.to_csv(path_or_buf, sep='\t')
