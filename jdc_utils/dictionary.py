@@ -1,5 +1,7 @@
 import pandera as pa
 import pandas as pd
+import json
+from urllib.request import urlopen
 
 def get_dictionary(manifest_url):
     '''
@@ -52,7 +54,6 @@ def define_dtype(prop_vals):
             dtype = dtype_key[prop_vals['type']]
         else: #type can be str or list
             dtype = dtype_key[prop_vals['type'][0]]
-        column_args['dtype'] = dtype
     elif 'enum' in prop_vals:
         enum_dtypes = set(type(x) for x in prop_vals['enum'])
         if str in enum_dtypes:
