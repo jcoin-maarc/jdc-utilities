@@ -1,3 +1,8 @@
+'''
+utilities to build dataframe representations (ie DataFrameSchema)
+ models for data input validation
+'''
+
 import pandera as pa
 import pandas as pd
 import json
@@ -17,8 +22,13 @@ def get_dictionary(manifest_url):
     dictionary = json.loads(urlopen(dictionary_url).read())
     return dictionary
 
-
 class NodeDictionary:
+    '''
+    Goal here is make an object that contains a DataFrameSchema object in addition 
+    to items that define each node (which help to (1) create the DataFrame Schema and
+    (2) provide an easy way to look up node definitions)
+
+    '''
     def __init__(self,manifest_url,type):
         self.type = type
         dictionary = get_dictionary(manifest_url) #note - full dictionary will be needed for node refs in future versions
@@ -32,10 +42,17 @@ class NodeDictionary:
         self.schema = self.build_schema()
 
     def check_require_unique(self,prop_name:str):
+        '''
+        check whether a column/property can allow duplicates/required to be 
+        uniuqe
+
+        TODO:
         #check if prop is in uniquekeys after taking out system properties
         #submitter ids need to be unique (both from parent or current node). 
         #Put other columns that need to be unique here
         # allow_duplicates will be deprecated in future pandera (so change to unique=is_unique)
+        '''
+
         if prop_name=='submitter_id':
             allow_duplicates = False
         else:
@@ -44,10 +61,12 @@ class NodeDictionary:
         return allow_duplicates
 
     def check_is_required(self,prop_name:str):
-        #determine if property is required
-        #if link is required, then property must be required...I believe
+        '''
+        determine if property is required
+        if link is required, then property must be required...I believe
 
-        #in case check is done after adding suffix(if parent node)
+        in case check is done after adding suffix(if parent node)
+        '''
         prop_name = re.sub('\..*','',prop_name)
         if prop_name in self.required: 
             is_required = True
@@ -59,10 +78,30 @@ class NodeDictionary:
         return is_required
 
     def find_reference_property(self):
+        '''
+        many properties point to a property within one of the default node yaml files
+        such as _terms.yaml and _definition.yaml. This function (will)
+        find all the properties associated with those yaml files
+        '''
         #TODO: use $ref -- split on #/ -- and reference yaml file instead of hard coding
         pass
 
     def define_dtype(self,prop_name:str,prop_vals:dict):
+        '''
+        this function maps dtypes within schema yaml files and 
+        returns the corresponding python type.
+
+        enums are a special case -- within the gen3 dictionaries, 
+        one can only have type or enum but not both. Therefore, the  type 
+        needs to inferred from enum values. 
+
+        Not sure if all enum values are read in as one type (ie either in 
+        parsing from python or wtihin gen3. Therefore I assign an order).
+
+        TODO: cols with $ref also will have types determined from other yaml files.
+        Therefore, need to find the type for this using the find_reference_property
+        fxn (to be created in future)
+        '''
         #TODO: map all possible dtype values in yamls
         dtype_key = {
             'string':str,
@@ -97,13 +136,18 @@ class NodeDictionary:
         return dtype
 
     def add_parent_prop_name(self,prop_name:str,parent_prop_name: str = 'submitter_id') -> str:
-        #change prop name if its a parent node property -- right now just submitter_id
-        #TODO: use $ref -- split on #/ -- and reference yaml file instead of hard coding
+        '''
+        change prop name if its a parent node property -- right now just submitter_id
+        TODO: use $ref -- split on #/ -- and reference yaml file instead of hard coding
+        '''
         if prop_name in [x['name'] for x in self.links]:
             prop_name = f"{prop_name}.{parent_prop_name}"
         return prop_name
 
     def build_column(self,prop_name,prop_vals):
+        '''
+        compile the arguments to a single Column or Index pandera classes
+        '''
         prop_name = self.add_parent_prop_name(prop_name)
         column_args = {}
         column_args['dtype'] = self.define_dtype(prop_name,prop_vals)
