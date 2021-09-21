@@ -6,6 +6,8 @@ import sys
 from jdc_utils.dictionary import NodeDictionary
 from jdc_utils.transforms import map as map_jdc
 from jdc_utils.transforms import to_quarter
+from pathlib import Path
+import os
 
 #manifest used for production deployment
 MANIFEST_URL = 'https://raw.githubusercontent.com/uc-cdis/cdis-manifest/master/jcoin.datacommons.io/manifest.json'
@@ -23,12 +25,18 @@ class NodeSubmission(NodeDictionary):
         self.unvalidated_data = data
         return self
 
-    def add_submitter_ids(self,ids,parent_node=None):
+    def add_submitter_ids(self,ids,parent_node=None,is_index=True):
         #TODO: replace_id function from dataforge here?
         if parent_node:
-            self.unvalidated_data[f"{parent_node}.submitter_id"] = ids
+            col_name = f"{parent_node}.submitter_id"
         else:
-            self.unvalidated_data["submitter_id"] = ids
+            col_name = "submitter_id"
+        
+        if is_index and not parent_node: #parent nodes cant be index
+            self.unvalidated_data.index = ids
+            self.unvalidated_data.index.name = col_name
+        else:
+            self.unvalidated_data[col_name] = ids
         return self
 
     def add_quarter(self,from_column='date_recruited'):
@@ -43,13 +51,10 @@ class NodeSubmission(NodeDictionary):
         return self
 
     def validate_df(self):
-        cols = self.schema.columns.keys()
-        node_cols = self.unvalidated_data.columns.isin(cols)
-        node_data = self.unvalidated_data.loc[:,node_cols]
-        self.validated_data = self.schema.validate(node_data)
-        return self.validated_df
+        self.validated_data = self.schema.validate(self.unvalidated_data)
+        return self.validated_data
 
-    def to_tsv(self,file_dir,file_path,index=True):
+    def to_tsv(self,file_dir,file_name,index=True):
         Path(file_dir).mkdir(parents=True, exist_ok=True)
         self.validated_data.to_csv(os.path.join(file_dir,file_name),index=index)
 

@@ -22,6 +22,7 @@ def get_dictionary(manifest_url):
     dictionary = json.loads(urlopen(dictionary_url).read())
     return dictionary
 
+
 class NodeDictionary:
     '''
     Goal here is make an object that contains a DataFrameSchema object in addition 
@@ -147,9 +148,13 @@ class NodeDictionary:
     def build_column(self,prop_name,prop_vals):
         '''
         compile the arguments to a single Column or Index pandera classes
+
+        if the property is specified as an index, makes the column an Index object
+        instead of a Column object (currently -- this is submitter_id)
         '''
         prop_name = self.add_parent_prop_name(prop_name)
         column_args = {}
+        column_args['name'] = prop_name
         column_args['dtype'] = self.define_dtype(prop_name,prop_vals)
         #determine checks needed. May want to add other custom for non-enum etc
         #TODO: make into general check fxn
@@ -160,9 +165,14 @@ class NodeDictionary:
 
         column_args['required'] = self.check_is_required(prop_name)
         column_args['allow_duplicates'] = self.check_require_unique(prop_name)
-        return {prop_name:pa.Column(**column_args)}
 
-    def build_schema(self) -> pa.DataFrameSchema:
+        if self.index_name==prop_name:
+            del column_args['required'] #Index does not have this argument
+            return pa.Index(**column_args)
+        else:
+            return {prop_name:pa.Column(**column_args)}
+
+    def build_schema(self,index_name='submitter_id') -> pa.DataFrameSchema:
         '''
         given a dictionary containing all the node jsons 
         (where the keys are yaml file names)
@@ -170,12 +180,29 @@ class NodeDictionary:
         where all columns not in the DataFrameSchema are dropped 
         upon validation.
         '''
-        links = {link['name']:link for link in self.links}
+        self.index_name = index_name
+        #links = {link['name']:link for link in self.links}
         pa_columns = {}
         for prop_name,prop_vals in self.properties.items():
             if prop_name not in self.system_properties:
-                pa_columns.update(self.build_column(prop_name,prop_vals))
-        schema = pa.DataFrameSchema(pa_columns,strict='filter')
+                if prop_name==index_name:
+                    pa_index = self.build_column(prop_name,prop_vals)
+                else:
+                    pa_columns.update(self.build_column(prop_name,prop_vals))
+
+        schema = pa.DataFrameSchema(columns=pa_columns,index=pa_index,strict='filter')
         return schema
+
+
+    # def map_cdash_ints(dictionary):
+    #     '''
+    #     takes an enum property
+    #     '''
+    #     properties = dictionary[field]['properties']
+    #     for name,prop in properties.items():
+    #         if 'enum' in prop:
+    #     prop['name']:{i:enum} if enum!='Not reported' else {99:enum} for i,enum in enumerate(prop) 
+
+
 
 
