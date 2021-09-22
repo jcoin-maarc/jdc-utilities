@@ -1,0 +1,7 @@
+assigned_sex:
+    name: gender
+
+race:
+    name: race
+    values:
+        More than one race: Some other race (SPECIFY)

@@ -1,0 +1,9 @@
+d2:
+    name: hispanic
+    values:
+        null: Not reported
+
+d4b:
+    name: gender
+    values:
+        null: Not reported

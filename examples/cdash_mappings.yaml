@@ -1,0 +1,27 @@
+gender_identity:
+  name: gender
+  values:
+    1: Male
+    2: Female
+
+race:
+  name: race
+  values:
+    1: White
+    2: Black or African American
+    3: American Indian or Alaska Native (SPECIFY principal tribe or community)
+    4: Asian
+    5: Native Hawaiian or Other Pacific Islander
+    6: Some other race (SPECIFY)
+
+
+hispanic_ethnicity:
+  name: hispanic
+  values:
+    0: 'No'
+    1: 'Yes'
+
+type:
+  name: role_in_project
+  values:
+    client: Client
