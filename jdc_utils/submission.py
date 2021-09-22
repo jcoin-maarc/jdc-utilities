@@ -21,7 +21,8 @@ class NodeSubmission(NodeDictionary):
     def map_df(self,df,mapfile):
         data = df.copy()
         map_jdc(data, mapfile)
-        data.insert(0,'type',self.type)
+        if 'type' not in data.columns:
+            data.insert(0,'type',self.type)
         self.unvalidated_data = data
         return self
 
@@ -42,7 +43,7 @@ class NodeSubmission(NodeDictionary):
     def add_quarter(self,from_column='date_recruited'):
         #TODO: integrate as a tranform into schema?
         self.unvalidated_data['quarter_recruited'] = to_quarter(
-            self.unvalidated_data.date_recruited
+            self.unvalidated_data[from_column]
             ).fillna('Not reported').astype(str)
         return self
 
