@@ -18,9 +18,10 @@ class NodeSubmission(NodeDictionary):
     def __init__(self, type,manifest_url=MANIFEST_URL):
         super().__init__(manifest_url=MANIFEST_URL,type=type)
 
-    def map_df(self,df,mapfile):
+    def map_df(self,df,mapfile=None):
         data = df.copy()
-        map_jdc(data, mapfile)
+        if mapfile:
+            map_jdc(data, mapfile)
         if 'type' not in data.columns:
             data.insert(0,'type',self.type)
         self.unvalidated_data = data
