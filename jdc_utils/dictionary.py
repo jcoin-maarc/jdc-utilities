@@ -16,6 +16,9 @@ def get_dictionary(manifest_url):
 
     using the manifest within the production repo ensures most updated 
     dictionary
+
+    #TODO: one thought -- this may not be best way to pull production dictionary values
+     --- may want to use built in dictionaryutils functions that pull values? 
     '''
     manifest_json = json.loads(urlopen(manifest_url).read())
     dictionary_url = manifest_json['global']['dictionary_url']

@@ -6,7 +6,7 @@ import re
 import sys
 from collections import OrderedDict
 from numpy.random import RandomState
-
+#TODO: make variable names more explicit and build out documentation for notes in each function
 def get_cell(df, address):
     """Get contents of cell in df based on Excel address (e.g., A1)"""
     
