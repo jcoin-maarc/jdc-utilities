@@ -9,9 +9,35 @@ from jdc_utils.transforms import to_quarter
 from pathlib import Path
 import os
 
+
+def df_to_json_records(df):
+    '''
+    converts
+    a dataframe into a list of json records
+    '''
+    json_str = df.to_json(orient='records')
+    return json.loads(json_str)
+
+def submit_to_gen3(ENDPOINT,PROGRAM,PROJECT,credentials_file_path,json_of_records):
+    '''currently, if the get_records returns a 400 error
+    (ie invalid request). There is not any info as to what 
+    causes the error. 
+    Submitted records directly gives the details
+    on error (eg invalid properties were passed)
+    or even more basic issues such as if you pass an invalid JSON
+    (eg JSON string instead of JSON object)
+
+    this fxn returns the output of these messages.
+    '''
+    api_url = "{}/api/v0/submission/{}/{}".format(ENDPOINT,PROGRAM,PROJECT)
+    output = requests.put(api_url, auth=auth, json=json_of_records)
+    return output.json()
+
 #manifest used for production deployment
 MANIFEST_URL = 'https://raw.githubusercontent.com/uc-cdis/cdis-manifest/master/jcoin.datacommons.io/manifest.json'
-
+#Gen3 API constant variables
+ENDPOINT = 'https://jcoin.datacommons.io/'
+PROGRAM = 'JCOIN'
 
 class NodeSubmission(NodeDictionary):
     
@@ -67,4 +93,19 @@ class NodeSubmission(NodeDictionary):
             return self
         else:
             pass
+
+    def to_gen3(self,credentials_file_path,PROJECT,ENDPOINT=ENDPOINT,PROGRAM=PROGRAM):
+        ENDPOINT,PROGRAM,PROJECT,credentials_file_path,json_of_records
+
+        #make auth object auth with credentials_file_path
+        json_of_validated_df = df_to_json_records(self.validated_data)
+        self.submission_request_feedback = submit_to_gen3(
+            ENDPOINT,
+            PROGRAM,
+            PROJECT,
+            auth,
+            json_of_records=json_of_validated_df)
+
+        return self
+
 
