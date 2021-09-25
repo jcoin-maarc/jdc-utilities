@@ -52,11 +52,19 @@ class NodeSubmission(NodeDictionary):
         self.unvalidated_data['role_in_project'] = role
         return self
 
-    def validate_df(self):
+    def validate_df(self,return_validated_df=False):
         self.validated_data = self.schema.validate(self.unvalidated_data)
-        return self.validated_data
+        if return_validated_df:
+            return self.validated_data
+        else:
+            return self
 
-    def to_tsv(self,file_dir,file_name,index=True):
+    def to_tsv(self,file_dir,file_name,index=True,return_self=True):
         Path(file_dir).mkdir(parents=True, exist_ok=True)
         self.validated_data.to_csv(os.path.join(file_dir,file_name),index=index)
+
+        if return_self:
+            return self
+        else:
+            pass
 
