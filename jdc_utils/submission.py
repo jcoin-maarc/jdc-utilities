@@ -9,6 +9,11 @@ from jdc_utils.transforms import to_quarter
 from pathlib import Path
 import os
 
+#manifest used for production deployment 
+MANIFEST_URL = 'https://raw.githubusercontent.com/uc-cdis/cdis-manifest/master/jcoin.datacommons.io/manifest.json'
+#Gen3 API constant variables
+ENDPOINT = 'https://jcoin.datacommons.io/'
+PROGRAM = 'JCOIN'
 
 def df_to_json_records(df):
     '''
@@ -18,7 +23,7 @@ def df_to_json_records(df):
     json_str = df.to_json(orient='records')
     return json.loads(json_str)
 
-def submit_to_gen3(ENDPOINT,PROGRAM,PROJECT,credentials_file_path,json_of_records):
+def submit_to_gen3(endpoint,program,project,credentials_file_path,json_of_records):
     '''currently, if the get_records returns a 400 error
     (ie invalid request). There is not any info as to what 
     causes the error. 
@@ -29,15 +34,11 @@ def submit_to_gen3(ENDPOINT,PROGRAM,PROJECT,credentials_file_path,json_of_record
 
     this fxn returns the output of these messages.
     '''
-    api_url = "{}/api/v0/submission/{}/{}".format(ENDPOINT,PROGRAM,PROJECT)
+    auth = Gen3Auth(refresh_file=credentials_file_path)
+    api_url = "{}/api/v0/submission/{}/{}".format(endpoint,program,project)
     output = requests.put(api_url, auth=auth, json=json_of_records)
     return output.json()
 
-#manifest used for production deployment
-MANIFEST_URL = 'https://raw.githubusercontent.com/uc-cdis/cdis-manifest/master/jcoin.datacommons.io/manifest.json'
-#Gen3 API constant variables
-ENDPOINT = 'https://jcoin.datacommons.io/'
-PROGRAM = 'JCOIN'
 
 class NodeSubmission(NodeDictionary):
     
@@ -94,18 +95,26 @@ class NodeSubmission(NodeDictionary):
         else:
             pass
 
-    def to_gen3(self,credentials_file_path,PROJECT,ENDPOINT=ENDPOINT,PROGRAM=PROGRAM):
-        ENDPOINT,PROGRAM,PROJECT,credentials_file_path,json_of_records
+    def to_gen3(self,credentials_file_path,project,program=PROGRAM,endpoint=ENDPOINT):
+        '''
+        uploads the validated data to the gen3 commons
+
+        WIP and has not been tested/used yet.
+        
+        TODO: may want to make gen3 properties a part of the init statement
+        and/or as part of the NodeDictionary class. This way, more fxns can
+        be added that queries records that have been uploaded 
+        (or as a programmatic way to download records).
+        '''
 
         #make auth object auth with credentials_file_path
         json_of_validated_df = df_to_json_records(self.validated_data)
         self.submission_request_feedback = submit_to_gen3(
-            ENDPOINT,
-            PROGRAM,
-            PROJECT,
-            auth,
+            endpoint=endpoint,
+            program=PROGRAM,
+            project=project,
+            credentials_file_path=credentials_file_path,
             json_of_records=json_of_validated_df)
-
         return self
 
 
