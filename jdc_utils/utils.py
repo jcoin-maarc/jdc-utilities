@@ -43,7 +43,7 @@ class Marginal:
         try:
             self.n = int(n)
             if sum>n:
-                sys.exit(f'Sum of marginals for {self.anem} exeeds total {self.n}')
+                sys.exit(f'Sum of marginals for {self.name} exeeds total {self.n}')
             else:
                 self.sum = sum
         except ValueError:
