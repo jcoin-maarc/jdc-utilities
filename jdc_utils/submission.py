@@ -39,11 +39,10 @@ def submit_to_gen3(endpoint,program,project,credentials_file_path,json_of_record
     output = requests.put(api_url, auth=auth, json=json_of_records)
     return output.json()
 
-
-class NodeSubmission(NodeDictionary):
+class NodeSubmission:
     
     def __init__(self, type,manifest_url=MANIFEST_URL):
-        super().__init__(manifest_url=MANIFEST_URL,type=type)
+        self.node_dictionary = NodeDictionary(manifest_url=MANIFEST_URL,type=type)
 
     def map_df(self,df,mapfile=None):
         data = df.copy()
@@ -80,7 +79,12 @@ class NodeSubmission(NodeDictionary):
         return self
 
     def validate_df(self,return_validated_df=False):
-        self.validated_data = self.schema.validate(self.unvalidated_data)
+        self.validated_data = (
+            self
+            .node_dictionary
+            .schema
+            .validate(self.unvalidated_data)
+        )
         if return_validated_df:
             return self.validated_data
         else:
