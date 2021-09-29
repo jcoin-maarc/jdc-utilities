@@ -25,7 +25,9 @@ def get_dictionary(manifest_url):
     dictionary = json.loads(urlopen(dictionary_url).read())
     return dictionary
 
-
+#May want to use DataDictionary as it recursively gets all $refs and is a uc-dis tool
+# https://github.com/uc-cdis/dictionaryutils/blob/master/dictionaryutils
+# May also want to conform to PFB format?
 class NodeDictionary:
     '''
     Goal here is make an object that contains a DataFrameSchema object in addition 
