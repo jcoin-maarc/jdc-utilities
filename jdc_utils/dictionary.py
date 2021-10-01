@@ -198,16 +198,13 @@ class NodeDictionary:
         schema = pa.DataFrameSchema(columns=pa_columns,index=pa_index,strict='filter')
         return schema
 
+    def to_tsv(self,df,file_dir,file_name,index=True,return_self=True):
 
-    # def map_cdash_ints(dictionary):
-    #     '''
-    #     takes an enum property
-    #     '''
-    #     properties = dictionary[field]['properties']
-    #     for name,prop in properties.items():
-    #         if 'enum' in prop:
-    #     prop['name']:{i:enum} if enum!='Not reported' else {99:enum} for i,enum in enumerate(prop) 
+        self.validated_data = df.schema.validate(df)
+        df.to_csv(os.path.join(file_dir,file_name),index=index)
 
-
-
+        if return_self:
+            return self
+        else:
+            pass
 
