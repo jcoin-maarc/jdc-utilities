@@ -11,10 +11,68 @@ def map(df, mapfile):
     """Rename vars and/or replace values"""
     
     map = read_mapfile(mapfile)
-    for var in map:
-        df.rename(columns={var: map[var]['name']}, inplace=True)
-        if 'values' in map[var] and map[var]['name'] in df:
-            df[map[var]['name']].replace(map[var]['values'], inplace=True)
+    column_props = map['columns']
+    for var,props in column_props.items():
+
+        if 'add_constant' in props:
+            df[var] = props['add_constant']
+
+        if 'to_submitter_id' in props:
+            df[props['name']] = df[var]
+
+        if 'to_quarter' in props:
+            if props['to_quarter']:
+                df[props['name']] = to_quarter(df[var]).fillna('Not reported').astype(str)
+
+        if 'values' in props:
+            df[var].replace(props['values'], inplace=True)
+
+        if 'name' in props:
+            df.rename(columns={var: props['name']}, inplace=True)
+
+    #if there are checkboxes, then run through them all
+    if 'checkboxes' in map:
+        checkbox_props = map['checkboxes']
+        checkbox_columns = {
+            var:props['checkbox'] 
+            for var,props in column_props.items() 
+            if 'checkbox' in props
+        }
+
+        for group,props in checkbox_props.items():
+            columns = [
+                var for var,props in checkbox_columns.items() 
+                if props['group']==group
+            ]
+            labels = [
+                props['label'] for var,props in checkbox_columns.items() 
+                if props['group']==group                
+            ]
+            
+            df[group] = collapse_checkall(
+                df, 
+                columns=columns, 
+                labels=labels,
+                checked=props['checked'],
+                multi_checked=props['multi_checked'],
+                none_checked=props['none_checked'], 
+                fillna=props['fillna']
+            )
+
+
+        
+def add_submitter_ids(df,ids,parent_node=None,is_index=True):
+    #TODO: replace_id function from dataforge here?
+    if parent_node:
+        col_name = f"{parent_node}.submitter_id"
+    else:
+        col_name = "submitter_id"
+    
+    if is_index and not parent_node: #parent nodes cant be index
+        df.index = ids
+        df.index.name = col_name
+    else:
+        df[col_name] = ids
 
 def to_quarter(datevar):
     
