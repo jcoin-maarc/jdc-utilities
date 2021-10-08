@@ -2,99 +2,65 @@
 
 import pandas as pd
 import yaml
+from collections import OrderedDict
 
-def read_mapfile(mapfile):
-    with open(mapfile) as file:
-        return yaml.safe_load(file)
 
-def map(df, mapfile):
-    """Rename vars and/or replace values"""
+
+class TransformDF(pd.DataFrame):
+    #init pd.DataFrame
+
+
+    def read_transformfile(transformfile):
+        with open(transformfile) as file:
+            return yaml.safe_load(file)
     
-    map = read_mapfile(mapfile)
-    column_props = map['columns']
-    for var,props in column_props.items():
+    def run_transformfile(transformfile):
+        ''' 
+        loop through transformations and mappings as specified 
+        in the yaml file
 
-        if 'add_constant' in props:
-            df[var] = props['add_constant']
+        then runs a given function name with a set of paramaters.
+        Intended to transform the dataframe inplace.
+        To provide compatability with native pandas fxns, 
+        the inplace argument assumed to be a parameter. 
 
-        if 'to_submitter_id' in props:
-            df[props['name']] = df[var]
+        If kwargs, then need to register a function 
+        calling the dictionary as keyword args in TransformDf class.
+        '''
+        transform_mappings = OrderedDict(read_transformfile(transformfile))
 
-        if 'to_quarter' in props:
-            if props['to_quarter']:
-                df[props['name']] = to_quarter(df[var]).fillna('Not reported').astype(str)
-
-        if 'values' in props:
-            df[var].replace(props['values'], inplace=True)
-
-        if 'name' in props:
-            df.rename(columns={var: props['name']}, inplace=True)
-
-    #if there are checkboxes, then run through them all
-    if 'checkboxes' in map:
-        checkbox_props = map['checkboxes']
-        checkbox_columns = {
-            var:props['checkbox'] 
-            for var,props in column_props.items() 
-            if 'checkbox' in props
-        }
-
-        for group,props in checkbox_props.items():
-            columns = [
-                var for var,props in checkbox_columns.items() 
-                if props['group']==group
-            ]
-            labels = [
-                props['label'] for var,props in checkbox_columns.items() 
-                if props['group']==group                
-            ]
-            
-            df[group] = collapse_checkall(
-                df, 
-                columns=columns, 
-                labels=labels,
-                checked=props['checked'],
-                multi_checked=props['multi_checked'],
-                none_checked=props['none_checked'], 
-                fillna=props['fillna']
-            )
-
+        for fxn_name,params in transform_mappings.items():
+            getattr(self,fxn_name)(**params,inplace=True)
 
         
-def add_submitter_ids(df,ids,parent_node=None,is_index=True):
-    #TODO: replace_id function from dataforge here?
-    if parent_node:
-        col_name = f"{parent_node}.submitter_id"
-    else:
-        col_name = "submitter_id"
-    
-    if is_index and not parent_node: #parent nodes cant be index
-        df.index = ids
-        df.index.name = col_name
-    else:
-        df[col_name] = ids
 
-def to_quarter(datevar):
-    
-    var = pd.to_datetime(datevar)
-    return pd.PeriodIndex(var, freq='Q')
+    def to_quarter(self,date_name,quarter_name,inplace=True):
+        ''' 
+        adds a quarter column by converting a date-like column
+        into a quarter
+        '''
+        var = pd.to_datetime(self[date_name])
+        self[quarter_name] = pd.PeriodIndex(var, freq='Q')
 
-def collapse_checkall(df, columns, checked='Checked',
-                      multi_checked='Multiple checked',
-                      none_checked='None checked', fillna=False, labels=None):
-    """Collapse multiple check-all-that-apply fields into one"""
-    
-    bcols = df[columns]==checked
-    var = bcols.idxmax(axis=1).where(bcols.sum(axis=1)==1, multi_checked).\
-                               where(bcols.sum(axis=1)>0, none_checked)
-    
-    var = var.where((df[columns].notnull().sum(axis=1)==len(columns)) |
-                    (var==multi_checked), None)
-    
-    if labels:
-        var.replace(dict(zip(columns,labels)), inplace=True)
-    
-    if fillna:
-        var.fillna(fillna, inplace=True)
-    
-    return var
+    def collapse_checkall(self, collapsed_name,columns, checked='Checked',
+                        multi_checked='Multiple checked',
+                        none_checked='None checked', fillna=False, labels=None,inplace=True):
+        """Collapse multiple check-all-that-apply fields into one"""
+        
+        bcols = df[columns]==checked
+        var = bcols.idxmax(axis=1).where(bcols.sum(axis=1)==1, multi_checked).\
+                                where(bcols.sum(axis=1)>0, none_checked)
+        
+        var = var.where((df[columns].notnull().sum(axis=1)==len(columns)) |
+                        (var==multi_checked), None)
+        
+        if labels:
+            var.replace(dict(zip(columns,labels)), inplace=True)
+        
+        if fillna:
+            var.fillna(fillna, inplace=True)
+        
+        df[collapsed_name] =  var
+
+
+

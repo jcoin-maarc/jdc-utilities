@@ -1,0 +1,55 @@
+## this mapping is for testing the new transform
+## here the top level is the function and the next level are the param(s)
+
+all_columns:
+  replace:
+    to_replace:
+      true: 'Yes'
+      false: 'No'
+
+one column:
+  rename:
+    columns:
+      fdfdf: dfdf
+      dfdfd: dsfdfdf
+
+  replace:
+    to_replace:
+      col1:
+        dfdf: dfdf
+        dfdf: dfdf
+        dfdf: dfdf
+      col2:
+        dsfdf: dfdf
+        dsfsdf: dsfdf
+
+multiple_columns:
+  collapse_checkboxes:
+    collapsed_name: race
+    columns:
+      - fdf
+      - fdfd
+    labels:
+      - dfdf
+      - dfdf
+    multi_checked: 'Some other race (SPECIFY)'
+    none_checked: 'Not reported'
+    fillna: 'Not reported' 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

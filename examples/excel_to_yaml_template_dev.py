@@ -1,4 +1,11 @@
-#%%
+''' 
+need a script that outputs marginals yaml file 
+
+this is the WIP -- right now very manual
+'''
+
+
+
 # from jdc_utils.utils import df_from_marginals
 from jdc_utils.transforms import read_mapfile
 import pandas as pd
