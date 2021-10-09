@@ -3,6 +3,7 @@
 import pandas as pd
 import yaml
 from collections import OrderedDict
+import pandas_flavor as pf
 
 def read_transformfile(transformfile):
     with open(transformfile) as file:
@@ -23,33 +24,38 @@ def run_transformfile(df,transformfile):
     '''
     transform_mappings = OrderedDict(read_transformfile(transformfile))
 
-    for fxn_name,params in transform_mappings.items():
-        try: #see if function is a pandas method
-            print(fxn_name)
-            print(params)
-            getattr(df,fxn_name)(**params,inplace=True)
-        except AttributeError: #if not, run the global function
-            print(fxn_name)
-            print(params)
-            eval(fxn_name)(df,**params,inplace=True)
 
-def to_quarter(df,from_date_name,to_quarter_name,inplace=None):
+    for fxn_name,params in transform_mappings.items():
+            print(fxn_name)
+            print(params)
+            getattr(df,fxn_name)(**params)
+
+#Note: alternative to using pandas-flavor is making a child class of pd.DataFrame
+#all registered functions should transforms df inplace or have capability of inplace
+#if making an inplace option to registered functions, make inplace=True as default.
+@pf.register_dataframe_method
+def to_quarter(df,from_date_name_to_quarter_name,inplace=True):
     ''' 
     adds a quarter column by converting a date-like column
     into a quarter
     '''
-    var = pd.to_datetime(df[from_date_name])
-    quarters = pd.PeriodIndex(var, freq='Q')
-    if inplace:
+    for from_date_name,to_quarter_name in from_date_name_to_quarter_name.items():
+        var = pd.to_datetime(df[from_date_name])
+        quarters = pd.PeriodIndex(var, freq='Q')
         df[to_quarter_name] = quarters
-    else:
-        return quarters
+    #return quarters
 
-def collapse_checkall(df, collapsed_name,columns, checked='Checked',
+@pf.register_dataframe_method
+def collapse_checkall(df, resulting_column_name,columns=None, columns_to_labels=None,checked='Checked',
                     multi_checked='Multiple checked',
-                    none_checked='None checked', fillna=False, labels=None,inplace=None):
+                    none_checked='None checked', fillna=False, labels=None,inplace=True):
     """Collapse multiple check-all-that-apply fields into one"""
     
+    #added option to make a columns to labels dict to make easier to see mappings
+    if columns_to_labels and not columns and not labels:
+        columns = columns_to_labels.keys()
+        labels = columns_to_labels.values()
+
     bcols = df[columns]==checked
     var = bcols.idxmax(axis=1).where(bcols.sum(axis=1)==1, multi_checked).\
                             where(bcols.sum(axis=1)>0, none_checked)
@@ -64,9 +70,24 @@ def collapse_checkall(df, collapsed_name,columns, checked='Checked',
         var.fillna(fillna, inplace=True)
     
     if inplace:
-        df[collapsed_name] =  var
+        df[resulting_column_name] =  var
     else:
         return var
 
 
+@pf.register_dataframe_method
+def replace_all_values(df,from_value_to_value,inplace=True):
+    df.replace(from_value_to_value,inplace=inplace)
 
+@pf.register_dataframe_method
+def add_columns_of_constants(df,column_name_and_value):
+    for name,value in column_name_and_value.items():
+        df[name] = value
+
+@pf.register_dataframe_method
+def rename_columns(df,from_name_to_name,inplace=True):
+    df.rename(columns=from_name_to_name,inplace=inplace)
+
+@pf.register_dataframe_method
+def replace_column_values(df,within_column_from_value_to_value,inplace=True):
+    df.replace(within_column_from_value_to_value,inplace=inplace)

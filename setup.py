@@ -10,6 +10,7 @@ setup(
     packages=find_namespace_packages(where='.'),
     install_requires=[
         'dataforge',
+        'pandas_flavor'
     ],
     entry_points='''
         [console_scripts]

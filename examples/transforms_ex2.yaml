@@ -1,0 +1,73 @@
+## this mapping is for testing the new transform
+## here the top level is the function and the next level are the param(s)
+
+#some variables you'll want to replace across the entire data table
+# replace:
+#   to_replace:
+#     true: 'Yes'
+#     false: 'No'
+replace_all_values:
+  from_value_to_value:
+    true: 'Yes'
+    false: 'No'
+
+#some specific columns will be needed to change. 
+#For example some column names are different across hubs and need to conform to the JDC name
+# or some values are different or more restricted within the JDC so these values will need to be replaced 
+#with the JDC values
+
+# insert:
+#   loc: 0
+#   column: protocol
+#   value: main
+
+add_columns_of_constants:
+  column_name_and_value:
+    protocols.submitter_id: main
+
+rename_columns:
+  from_name_to_name:
+    d4_b: gender
+    record_id: submitter_id
+
+
+replace_column_values:
+  within_column_from_value_to_value:
+    race:
+      More than one race: Some other race (SPECIFY)
+  
+to_quarter:
+  from_date_name_to_quarter_name:
+    date_recruited: quarter_recruited
+
+#finally some columns require combining (ie collapsing). 
+collapse_checkall:
+  resulting_column_name: race
+  columns_to_labels:
+    'd3___1': 'White'
+    'd3___2': 'Black or African American'
+    'd3___3': 'American Indian or Alaska Native (SPECIFY principal tribe or community)'
+    'd3___4': 'Asian'
+    'd3___5': 'Native Hawaiian or Other Pacific Islander'
+    'd3___6': 'Some other race (SPECIFY)'
+  multi_checked: 'Some other race (SPECIFY)'
+  none_checked: 'Not reported'
+  fillna: 'Not reported'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

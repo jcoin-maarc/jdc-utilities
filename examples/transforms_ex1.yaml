@@ -24,19 +24,6 @@ to_quarter:
   from_date_name: date_recruited
   to_quarter_name: quarter_recruited
 
-#finally, some columns require combining (ie collapsing). 
-collapse_checkall:
-  collapsed_name: race
-  columns:
-    - fdf
-    - fdfd
-  labels:
-    - dfdf
-    - dfdf
-  multi_checked: 'Some other race (SPECIFY)'
-  none_checked: 'Not reported'
-  fillna: 'Not reported' 
-
 
 
 
