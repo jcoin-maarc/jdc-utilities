@@ -1,0 +1,11 @@
+- project_name: JCOIN
+  hub_name: TEST
+  data_file_path: >
+c:/Users/kranz-michael/projects/rcg-bsd-gitlab/jcoin-maarc/jdc-utilities/data_mgmt/tmp/UniversityOfKentucky_DATA_LABELS_2021-05-14_1315.csv
+  variable_categories:
+    - participant
+    - demographic
+  variable_transform_file_path: >
+c:/Users/kranz-michael/projects/rcg-bsd-gitlab/jcoin-maarc/jdc-utilities/examples/transforms_ex2.yaml
+
+
