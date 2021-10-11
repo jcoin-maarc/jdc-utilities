@@ -1,15 +1,20 @@
-## this mapping is for testing the new transform
+## this mapping is for testing the new transform design
 ## here the top level is the function and the next level are the param(s)
+## functions commented out are used for other possibilities
 
 #some variables you'll want to replace across the entire data table
+
+
 # replace:
 #   to_replace:
 #     true: 'Yes'
 #     false: 'No'
-replace_all_values:
-  from_value_to_value:
-    true: 'Yes'
-    false: 'No'
+
+# replace_all_values:
+#   from_value_to_value:
+#     true: 'Yes'
+#     false: 'No'
+    
 
 #some specific columns will be needed to change. 
 #For example some column names are different across hubs and need to conform to the JDC name
@@ -24,17 +29,23 @@ replace_all_values:
 add_columns_of_constants:
   column_name_and_value:
     protocols.submitter_id: main
+    role_in_project: Client
 
 rename_columns:
   from_name_to_name:
-    d4_b: gender
+    d4b: gender
+    d2: hispanic
     record_id: submitter_id
 
 
 replace_column_values:
   within_column_from_value_to_value:
-    race:
-      More than one race: Some other race (SPECIFY)
+    hispanic:
+      0: 'Yes'
+      1: 'No'
+      null: 'Not reported'
+    gender:
+      null: 'Not reported'
   
 to_quarter:
   from_date_name_to_quarter_name:

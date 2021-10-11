@@ -100,7 +100,7 @@ class Node:
     (2) provide an easy way to look up node definitions)
 
     '''
-    def __init__(self,manifest_url,type):
+    def __init__(self,type,manifest_url=MANIFEST_URL):
         self.type = type
         dictionary = get_dictionary(manifest_url) #note - full dictionary will be needed for node refs in future versions
         
@@ -226,6 +226,7 @@ class Node:
         column_args = {}
         column_args['name'] = prop_name
         column_args['dtype'] = self.define_dtype(prop_name,prop_vals)
+        column_args['coerce'] = True
         #determine checks needed. May want to add other custom for non-enum etc
         #TODO: make into general check fxn
         column_args['checks'] = []
@@ -263,17 +264,41 @@ class Node:
         schema = pa.DataFrameSchema(columns=pa_columns,index=pa_index,strict='filter')
         return schema
 
-    def to_tsv(self,df,file_dir=None,file_name=None,index=True,return_self=False,return_tsv=False):
+    def to_tsv(
+        self,
+        df,
+        file_dir='',file_name='',
+        index=True,
+        return_type=None
+        ):
+        ''' 
+        outputs a tsv (or Node instance with validated dataframe if specified) 
+        after (1) adding required node specific properties
+        and (2) validating fields of node in the given dataframe
+
+        '''
+        data = df.copy()
         sep = '\t'
-        self.validated_data = df.schema.validate(df)
+        #add node specific fields
+
+        ##add the node type (ie name)
+        if 'type' not in df:
+            data['type'] = self.type
+
+        #make submitter_id index if not already index
+        if data.index.name!=self.index_name:
+            data.set_index(self.index_name,inplace=True)
+
+        self.validated_data = self.schema.validate(data)
         
-        if file_dir and file_name:
-            df.to_csv(os.path.join(file_dir,file_name),index=index,sep='\t')
+        if file_name:
+            Path(file_dir).mkdir( parents=True, exist_ok=True )
+            self.validated_data.to_csv(os.path.join(file_dir,file_name),index=index,sep='\t')
 
         if return_type=='node':
             return self
         elif return_type=='tsv':
-            return df.to_csv(index=index,sep=sep)
+            return self.validated_data.to_csv(index=index,sep=sep)
         else:
             pass
 

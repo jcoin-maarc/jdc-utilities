@@ -1,6 +1,18 @@
 # Utilities for preparing and submitting data to the JDC
 
+## Extracting summary statistics
+
+**IN DEVELOPMENT**
+
 ## Proposed workflow for submitting individual level data
+
+This workflow provides a scalable way to manage different hub data collection procedures and general enough that many of these elements can be generalized to other use cases. 
+
+Only changes to human-readable files are required (eg the config and transform yaml files)
+
+**See examples/example.py  for an example implemention of this workflow containing example config and transform yaml files with datafiles 
+and output tsv files.**
+
 
 ### User-specified files
 1. config.yaml
@@ -18,6 +30,7 @@ Intended to be the only input file for CLI. Consists of records with the followi
 So, say a hub is updating data to the JDC and has separate data collection systems (and output data files) for clients and staff data for fields in the participant and demographic nodes (ie variable categories), this would have 2 records in the config.yaml:
 
 ```yaml
+datafiles:
     - program_name: JCOIN
     hub_name: TEST
     variable_categories: 
@@ -33,6 +46,7 @@ So, say a hub is updating data to the JDC and has separate data collection syste
     data_file_path: /Users/johndoe/project/client_local_data.xlsx
     variable_transform_file_path: /Users/johndoe/project/client_transforms.yaml
 ```
+*Note: the records are nested under the `datafiles` name to provide option for other configurations (eg specifying base directory)*
 
 2. transforms.yaml
 
@@ -66,6 +80,11 @@ df.rename(columns={
 })
 
 ```
+Custom registered functions leverage pandas-flavor 
+module to directly make pandas methods to the 
+pd.DataFrame class. Many of these registered
+functions are in the transforms.py, but does not necessarily
+need to be restricted to only this file.
 
 Example custom registered functions:
 

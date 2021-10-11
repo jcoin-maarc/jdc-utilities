@@ -3,6 +3,7 @@
 import pandas as pd
 import openpyxl
 import yaml
+import re
 from collections import OrderedDict
 import pandas_flavor as pf
 
@@ -25,6 +26,7 @@ def read_df(file_path):
     #xls
     else:
         sys.exit("Data type not supported")
+    return df
 
 def read_transformfile(transformfile):
     with open(transformfile) as file:
@@ -55,7 +57,7 @@ def run_transformfile(df,transformfile):
 #all registered functions should transforms df inplace or have capability of inplace
 #if making an inplace option to registered functions, make inplace=True as default.
 @pf.register_dataframe_method
-def to_quarter(df,from_date_name_to_quarter_name,inplace=True):
+def to_quarter(df,from_date_name_to_quarter_name):
     ''' 
     adds a quarter column by converting a date-like column
     into a quarter
