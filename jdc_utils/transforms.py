@@ -6,6 +6,7 @@ import yaml
 import re
 from collections import OrderedDict
 import pandas_flavor as pf
+from pathlib import Path
 
 def read_df(file_path):
     '''
@@ -51,7 +52,10 @@ def run_transformfile(df,transformfile):
     for fxn_name,params in transform_mappings.items():
             print(fxn_name)
             print(params)
-            getattr(df,fxn_name)(**params)
+            if fxn_name=='replace_ids': #not in place so need to re assign df variable after replacing ids
+                df = replace_ids(df,**params)
+            else:
+                getattr(df,fxn_name)(**params)
 
 #Note: alternative to using pandas-flavor is making a child class of pd.DataFrame
 #all registered functions should transforms df inplace or have capability of inplace
@@ -114,3 +118,22 @@ def rename_columns(df,from_name_to_name,inplace=True):
 @pf.register_dataframe_method
 def replace_column_values(df,within_column_from_value_to_value,inplace=True):
     df.replace(within_column_from_value_to_value,inplace=inplace)
+
+
+# @pf.register_dataframe_method
+# def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
+#     ''' 
+#     uses dataforge's replace_ids function to get ids 
+#     Note: no inplace option right now so need to manually plug in to run_transforms.
+
+#     id_file: file where the list of available generated ids lives
+#     map_file: csv file where current old_id to new_id mappings are tracked
+    
+#     ''' 
+#     id_file_path = Path(id_file)
+#     map_file_path = Path(map_file)
+#     map_url_path = Path(map_url)
+#     return replace_ids(df, id_file_path, map_file_path, map_url_path, level=0, column=None)
+
+
+

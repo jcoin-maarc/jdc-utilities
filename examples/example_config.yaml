@@ -1,20 +1,29 @@
 datafiles:
-  - id: staff
-    program_name: JCOIN
-    hub_name: TEST
-    data_file_path: example_input_staff.xlsx
-    variable_categories:
-      - participant
-      - demographic
-    variable_transform_file_path: example_transforms_staff.yaml
-    outputted_tsv_file_dir: ''
   - id: client
+    data_file_path: C:\Users\kranz-michael\projects\rcg-bsd-gitlab\jcoin-maarc\jdc-utilities\examples\example_input_client.csv
     program_name: JCOIN
     hub_name: TEST
-    data_file_path: example_input_client.csv
     variable_categories:
-      - participant
-      - demographic
-    variable_transform_file_path: example_transforms_client.yaml
+        - all
+    variable_transform_file_path: C:\Users\kranz-michael\projects\rcg-bsd-gitlab\jcoin-maarc\jdc-utilities\examples\example_transforms_client.yaml
     outputted_tsv_file_dir: ''
 
+#datafiles:
+  # - id: staff
+  #   program_name: JCOIN
+  #   hub_name: TEST
+  #   data_file_path: example_input_staff.xlsx
+  #   variable_categories:
+  #     - participant
+  #     - demographic
+  #   variable_transform_file_path: example_transforms_staff.yaml
+  #   outputted_tsv_file_dir: ''
+  # - id: client
+  #   program_name: JCOIN
+  #   hub_name: TEST
+  #   data_file_path: example_input_client.csv
+  #   variable_categories:
+  #     - participant
+  #     - demographic
+  #   variable_transform_file_path: example_transforms_client.yaml
+  #   outputted_tsv_file_dir: ''

@@ -9,8 +9,15 @@ setup(
     url='https://rcg.bsd.uchicago.edu/gitlab/maarc/dasc/jdc-utilities',
     packages=find_namespace_packages(where='.'),
     install_requires=[
-        'dataforge',
-        'pandas_flavor'
+        'pandas',
+        'pandas_flavor',
+        'gitpython',
+        'click',
+        'openpyxl',
+        'pyyaml',
+        'pandera',
+        'json',
+        'jsonpath_ng',
     ],
     entry_points='''
         [console_scripts]
