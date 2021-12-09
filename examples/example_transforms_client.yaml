@@ -21,16 +21,6 @@
 # or some values are different or more restricted within the JDC so these values will need to be replaced 
 #with the JDC values
 
-# insert:
-#   loc: 0
-#   column: protocol
-#   value: main
-
-replace_ids:
-  id_file: C:\Users\kranz-michael\projects\rcg-bsd-gitlab\jcoin-maarc\jdc-utilities\data_mgmt\id_store\submitter_ids.txt
-  map_file: C:\Users\kranz-michael\projects\rcg-bsd-gitlab\jcoin-maarc\jdc-utilities\data_mgmt\id_store\local_to_jdc_ids.csv
-  map_url: C:\Users\kranz-michael\projects\rcg-bsd-gitlab\jcoin-maarc\hubs\general\repos\test-secrets.git
-
 
 add_columns_of_constants:
   column_name_and_value:
@@ -41,7 +31,23 @@ rename_columns:
   from_name_to_name:
     d4b: gender
     d2: hispanic
-    #record_id: submitter_id
+    record_id: submitter_id
+    s4a: S4a
+    s4b: S4b
+    s4c: S4c
+    s4d: S4d
+    s4e: S4e
+    s4f: S4f
+    s4g: S4g
+    s4h: S4h
+    s4j: S4j
+    s4k: S4k
+    s4m: S4m
+    s4n: S4n
+    s4z: S4z
+  
+
+
 
 
 replace_column_values:

@@ -1,48 +1,44 @@
-
+#%%
 import yaml
 import pandas as pd
 from jdc_utils.transforms import run_transformfile,read_df
 from jdc_utils.submission import Node
+from jdc_utils.dataforge_ids import replace_ids
 from pathlib import Path
-from jdc_utils.utils import generate_submitter_ids
-## make ids
-#test = Path("../data_mgmt/id_store")
-#generate_submitter_ids(filepath=f"{test.as_posix()}/submitter_ids.txt")
 
-config_path = Path(r"C:\Users\kranz-michael\projects\rcg-bsd-gitlab\jcoin-maarc\jdc-utilities\examples\example_config.yaml")
+
+config_path = Path("example_config.yaml")
+#Gen3 API constant variables
+ENDPOINT = 'https://jcoin.datacommons.io/'
+PROGRAM = 'JCOIN'
+
 with open(config_path,'r') as f:
     configs = yaml.safe_load(f)
 
-#%%
+replace_id_params_all_files = configs.get('replace_ids',None)
+
 for config in configs['datafiles']:
     print(config)
-    df = read_df(config['data_file_path'])
-    run_transformfile(df,transformfile=config['variable_transform_file_path'])
-    #validate submissions with participant and demographic nodes
-    for node_name in config['variable_categories']:
-        data = df.copy()
-        node = Node(node_name)
 
-        #add the upstream submitter_id linked to one_to_one node (eg demographic)
-        #TODO: add link submitter ids programatically to Node.to_tsv for one_to_one links?
-        if node_name!='participant':
-            #convention is to have reference of upstream nodes to have plural 
-            #e.g., participant node referenced as participants
-            data['participants.submitter_id'] = data['submitter_id'].copy()
+    transform_file = config.get('variable_transform_file_path',None)
+    variable_categories = config.get('variable_categories',None)
+    replace_id_params_this_file = config.get('replace_ids',None)
+    if replace_id_params:
+        df = replace_ids(read_df(config['data_file_path']),**replace_id_params_all_files)
+    elif replace_id_params_this_file:
+        df = replace_ids(read_df(config['data_file_path']),**replace_id_params_this_file)
+    else:
+        df = read_df(config['data_file_path'])
 
-        #write to file
-        tsv_file = f"{config['hub_name']}_{config['id']}_{node_name}.tsv"
-        print(tsv_file)
-        node.to_tsv(data,file_dir=config['outputted_tsv_file_dir'],file_name=tsv_file)
+    
+    if transform_file:
+        run_transformfile(df,transformfile=config['variable_transform_file_path'])
 
-
-# from dataforge.ids import replace_ids
-
-# path = lambda x: Path(x).as_posix()
-# replace_ids_dict = dict(
-#   id_file=path(r"C:\Users\kranz-michael\projects\rcg-bsd-gitlab\jcoin-maarc\jdc-utilities\data_mgmt\id_store\submitter_ids.txt"),
-#   map_file= path(r"C:\Users\kranz-michael\projects\rcg-bsd-gitlab\jcoin-maarc\jdc-utilities\data_mgmt\id_store\local_to_jdc_ids.csv"),
-#   map_url=path(r"C:\Users\kranz-michael\projects\rcg-bsd-gitlab\jcoin-maarc\hubs\general\repos\test-secrets.git")
-# )
-# df = read_df(configs['datafiles'][0]['data_file_path'])
-# replace_ids(df,**replace_ids_dict)
+    if variable_categories:
+        #validate submissions with participant and demographic nodes
+        for node_name in variable_categories:
+            data = df.copy()
+            node = Node(ENDPOINT,node_name)
+            #write to file
+            tsv_file = f"{config['hub_name']}_{config['id']}_{node_name}.tsv"
+            node.to_tsv(data,file_dir=config['outputted_tsv_file_dir'],file_name=tsv_file)
