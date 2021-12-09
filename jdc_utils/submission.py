@@ -7,17 +7,27 @@ import pandera as pa
 import pandas as pd
 import json
 import re
-from urllib.request import urlopen
-import requests
+# from urllib.request import urlopen
+# import requests
 
-from gen3.auth import Gen3Auth
-from gen3.submission import Gen3Submission
+#from gen3.auth import Gen3Auth
+#from gen3.submission import Gen3Submission
+
+from io import StringIO
+import hashlib
+import requests
+import numpy as np
+
+import yaml
+from jsonpath_ng import parse
+import json 
+
+from collections.abc import Iterable
+
+import glob
 
 #manifest used for production deployment 
-MANIFEST_URL = 'https://raw.githubusercontent.com/uc-cdis/cdis-manifest/master/jcoin.datacommons.io/manifest.json'
-#Gen3 API constant variables
-ENDPOINT = 'https://jcoin.datacommons.io/'
-PROGRAM = 'JCOIN'
+#MANIFEST_URL = 'https://raw.githubusercontent.com/uc-cdis/cdis-manifest/master/jcoin.datacommons.io/manifest.json'
 
 
 def df_to_json_records(df):
@@ -28,71 +38,33 @@ def df_to_json_records(df):
     json_str = df.to_json(orient='records')
     return json.loads(json_str)
     
-def submit_protocols(protocol_info='protocols.yaml',credentials_file_name = "credentials.json",endpoint=ENDPOINT):
-    '''
-    submit protocol(s) for several projects
+# def get_dictionary(manifest_url):
+#     '''
+#     given a cdis manifest url pointing to a manifest json file,
+#     pull out the data dictionary (ie schema.json)
 
-    Takes a file called protocols.yaml containing info that changes across protocols, formats a dict, and submits.
-    Will exit with detailed error if submission not successful
+#     using the manifest within the production repo ensures most updated 
+#     dictionary
 
-    TODO: add more individaul protocol levels to protocols.yaml and make protocol_json loop through programmaticallly
-    rather than hardocding.
-    '''
-    with open(protocol_info,'r') as f:
-        hub_protocol_info = yaml.safe_load(f)
-    auth = Gen3Auth(refresh_file=credentials_file_name)
-    sub = Gen3Submission(auth)
+#     #TODO: one thought -- this may not be best way to pull production dictionary values
+#      --- may want to use built in dictionaryutils functions that pull values? 
+#     '''
+#     manifest_json = json.loads(urlopen(manifest_url).read())
+#     dictionary_url = manifest_json['global']['dictionary_url']
+#     dictionary = json.loads(urlopen(dictionary_url).read())
+#     return dictionary
 
-    for project,properties in hub_protocol_info.items():
-        protocol_cluster = properties['protocol']
-        protocol_json = [
-            {
-                'submitter_id':'main',
-                'project_id':PROGRAM+'-'+project,
-                'type':'protocol',
-                #'research_question': research_question,
-                'protocol':protocol_cluster,
-                'projects':{'code':project}
-            }
-        ]
-        api_url = "{}/api/v0/submission/{}/{}".format(ENDPOINT,PROGRAM,project)
-        output = requests.put(api_url, auth=auth, json=protocol_json)
-
-
-def submit_tsvs(protocol_info='protocols.yaml',credentials_file_name="credentials.json"):
-
-    with open(protocol_info,'r') as f:
-        hub_protocol_info = yaml.safe_load(f)
-    auth = Gen3Auth(refresh_file=credentials_file_name)
-    sub = Gen3Submission(auth)
-
-    for project,properties in hub_protocol_info.items():
-        tsv_paths = properties['tsv_paths']
-        for tsv in tsv_paths:
-            api_url = "{}/api/v0/submission/{}/{}".format(ENDPOINT,PROGRAM,project)
-            output = requests.put(api_url, auth=auth, tsv=tsv)
+def get_dictionary(endpoint,node_type='_all'):
+    ''' 
+    get json dictionary with all references (eg if $ref then API has these properties of this ref)
     
+    _all gets entire schema while node names get only that node type
+    ''' 
+    api_url = f"{endpoint}/api/v0/submission/_dictionary/{node_type}"
+    output = requests.get(api_url).text
+    data = json.loads(output)
+    return data
 
-
-def get_dictionary(manifest_url):
-    '''
-    given a cdis manifest url pointing to a manifest json file,
-    pull out the data dictionary (ie schema.json)
-
-    using the manifest within the production repo ensures most updated 
-    dictionary
-
-    #TODO: one thought -- this may not be best way to pull production dictionary values
-     --- may want to use built in dictionaryutils functions that pull values? 
-    '''
-    manifest_json = json.loads(urlopen(manifest_url).read())
-    dictionary_url = manifest_json['global']['dictionary_url']
-    dictionary = json.loads(urlopen(dictionary_url).read())
-    return dictionary
-
-#May want to use DataDictionary as it recursively gets all $refs and is a uc-dis tool
-# https://github.com/uc-cdis/dictionaryutils/blob/master/dictionaryutils
-# May also want to conform to PFB format?
 class Node:
     '''
     Goal here is make an object that contains a DataFrameSchema object in addition 
@@ -100,15 +72,17 @@ class Node:
     (2) provide an easy way to look up node definitions)
 
     '''
-    def __init__(self,type,manifest_url=MANIFEST_URL):
+    def __init__(self,endpoint,type):
         self.type = type
-        dictionary = get_dictionary(manifest_url) #note - full dictionary will be needed for node refs in future versions
+        dictionary = get_dictionary(endpoint,type) #note - full dictionary will be needed for node refs in future versions
         
-        self.system_properties = dictionary[f'{type}.yaml']['systemProperties']
-        self.properties = dictionary[f'{type}.yaml']['properties']
-        self.links = dictionary[f'{type}.yaml']['links']
-        self.required = dictionary[f'{type}.yaml']['required']
-        self.unique_keys = dictionary[f'{type}.yaml']['uniqueKeys']
+        self.system_properties = dictionary['systemProperties']
+        self.properties = dictionary['properties']
+        self.links = dictionary['links']
+        self.required = dictionary['required']
+        self.unique_keys = dictionary['uniqueKeys']
+        #get just the link names
+        self.link_names = [x.value for x in parse("$..name").find(self.links)]
 
         self.schema = self.build_schema()
 
@@ -148,15 +122,6 @@ class Node:
         
         return is_required
 
-    def find_reference_property(self):
-        '''
-        many properties point to a property within one of the default node yaml files
-        such as _terms.yaml and _definition.yaml. This function (will)
-        find all the properties associated with those yaml files
-        '''
-        #TODO: use $ref -- split on #/ -- and reference yaml file instead of hard coding
-        pass
-
     def define_dtype(self,prop_name:str,prop_vals:dict):
         '''
         this function maps dtypes within schema yaml files and 
@@ -168,10 +133,6 @@ class Node:
 
         Not sure if all enum values are read in as one type (ie either in 
         parsing from python or wtihin gen3. Therefore I assign an order).
-
-        TODO: cols with $ref also will have types determined from other yaml files.
-        Therefore, need to find the type for this using the find_reference_property
-        fxn (to be created in future)
         '''
         #TODO: map all possible dtype values in yamls
         dtype_key = {
@@ -196,24 +157,9 @@ class Node:
                 dtype = int
             else: #TODO: add other possibilities? raise error as in current validate fxn?
                 dtype = object
-        #elif '$ref' in prop_vals and prop_name in links:
-        elif 'submitter_id' in prop_name:
-            dtype = str
-        #TODO: in future may want to build this out but for now just skipping (eg id, create date)
-        elif '$ref' in prop_vals: 
-            return None
         else:
             raise Exception("No type in property...something is wrong with yaml file")
         return dtype
-
-    def add_parent_prop_name(self,prop_name:str,parent_prop_name: str = 'submitter_id') -> str:
-        '''
-        change prop name if its a parent node property -- right now just submitter_id
-        TODO: use $ref -- split on #/ -- and reference yaml file instead of hard coding
-        '''
-        if prop_name in [x['name'] for x in self.links]:
-            prop_name = f"{prop_name}.{parent_prop_name}"
-        return prop_name
 
     def build_column(self,prop_name,prop_vals):
         '''
@@ -222,7 +168,6 @@ class Node:
         if the property is specified as an index, makes the column an Index object
         instead of a Column object (currently -- this is submitter_id)
         '''
-        prop_name = self.add_parent_prop_name(prop_name)
         column_args = {}
         column_args['name'] = prop_name
         column_args['dtype'] = self.define_dtype(prop_name,prop_vals)
@@ -233,7 +178,7 @@ class Node:
         if 'enum' in prop_vals:
             enum_check = pa.Check.isin(prop_vals['enum'])
             column_args['checks'].append(enum_check)
-
+            
         column_args['required'] = self.check_is_required(prop_name)
         column_args['allow_duplicates'] = self.check_require_unique(prop_name)
 
@@ -259,6 +204,12 @@ class Node:
                 if prop_name==index_name:
                     pa_index = self.build_column(prop_name,prop_vals)
                 else:
+                    #if property is a link
+                    ##add parent node name and re-assign prop_name 
+                    if prop_name in self.link_names:
+                        prop_name = f"{prop_name}.submitter_id"
+                        prop_vals = dict(self.properties['submitter_id'])
+                    
                     pa_columns.update(self.build_column(prop_name,prop_vals))
 
         schema = pa.DataFrameSchema(columns=pa_columns,index=pa_index,strict='filter')
@@ -286,7 +237,7 @@ class Node:
             data['type'] = self.type
 
         #make submitter_id index if not already index
-        if data.index.name!=self.index_name:
+        if data.index.name!=self.index_name and self.index_name in data.columns:
             data.set_index(self.index_name,inplace=True)
 
         self.validated_data = self.schema.validate(data)
