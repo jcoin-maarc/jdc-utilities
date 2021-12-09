@@ -119,6 +119,11 @@ def rename_columns(df,from_name_to_name,inplace=True):
 def replace_column_values(df,within_column_from_value_to_value,inplace=True):
     df.replace(within_column_from_value_to_value,inplace=inplace)
 
+@pf.register_dataframe_method
+def combine_columns(df,new_name,cols):
+    df[new_name] = ''
+    for c in cols:
+        df[new_name]+= df[c].astype(str)
 
 # @pf.register_dataframe_method
 # def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
