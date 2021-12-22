@@ -125,6 +125,16 @@ def combine_columns(df,new_name,cols):
     for c in cols:
         df[new_name]+= df[c].astype(str)
 
+@pf.register_dataframe_method 
+def rename_and_change_values(df:pd.DataFrame,name_and_values:dict):
+    """Rename vars and/or replace values"""
+    for current_name,new_name_and_values in name_and_values.items():
+        if 'values' in new_name_and_values.keys():
+            df[current_name].replace(new_name_and_values['values'], inplace=True)
+        if 'name' in new_name_and_values.keys():
+            df.rename(columns={current_name: new_name_and_values['name']}, inplace=True)
+
+
 # @pf.register_dataframe_method
 # def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
 #     ''' 
