@@ -16,7 +16,6 @@ setup(
         'openpyxl',
         'pyyaml',
         'pandera',
-        'json',
         'jsonpath_ng',
     ],
     entry_points='''
