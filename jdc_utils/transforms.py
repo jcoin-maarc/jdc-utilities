@@ -75,9 +75,13 @@ def to_quarter(df,from_date_name_to_quarter_name):
     #return quarters
 
 @pf.register_dataframe_method
-def collapse_checkall(df, resulting_column_name,columns=None, columns_to_labels=None,checked='Checked',
-                    multi_checked='Multiple checked',
-                    none_checked='None checked', fillna=False, labels=None,inplace=True):
+def collapse_checkall(
+    df, resulting_column_name,columns=None, 
+    columns_to_labels=None,
+    checked='Checked',
+    multi_checked='Multiple checked',
+    none_checked='None checked',
+    fillna=False, labels=None,inplace=True):
     """Collapse multiple check-all-that-apply fields into one"""
     
     #added option to make a columns to labels dict to make easier to see mappings
@@ -131,11 +135,13 @@ def combine_columns(df,new_name,cols):
 def rename_and_change_values(df:pd.DataFrame,name_and_values:dict):
     """Rename vars and/or replace values"""
     for current_name,new_name_and_values in name_and_values.items():
+        #added fillna as it could mean something different for each variable
+        if 'fillna' in new_name_and_values.keys():
+            df[current_name].fillna(new_name_and_values['fillna'],inplace=True)
         if 'values' in new_name_and_values.keys():
             df[current_name].replace(new_name_and_values['values'], inplace=True)
         if 'name' in new_name_and_values.keys():
             df.rename(columns={current_name: new_name_and_values['name']}, inplace=True)
-
 
 # @pf.register_dataframe_method
 # def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
