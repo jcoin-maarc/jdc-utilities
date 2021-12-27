@@ -139,7 +139,8 @@ class Node:
             'string':str,
             'integer':int,
             'number':float,
-            'array':object
+            'array':object,
+            'boolean':bool,
         }
         #determine dtype
         if 'type' in prop_vals:
