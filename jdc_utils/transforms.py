@@ -2,6 +2,7 @@
 
 import pandas as pd
 import openpyxl
+import xlrd
 import yaml
 import re
 from collections import OrderedDict
@@ -14,17 +15,18 @@ def read_df(file_path):
     the type of file
 
     '''
-    file_type = re.split("\.",file_path)[-1]
+    file_type = re.split("\.",str(file_path))[-1]
 
     if file_type=='csv':
         df = pd.read_csv(file_path)
     elif file_type=='tsv':
         df = pd.read_csv(file_path,sep='\t')
     elif file_type=='xlsx':
-        df = pd.read_excel(file_path)
+        df = pd.read_excel(file_path,engine='openpyxl')
+    elif file_type=='xls':
+        df = pd.read_excel(file_path,engine='xlrd')
     #TO ADD:
     #redcap 
-    #xls
     else:
         sys.exit("Data type not supported")
     return df

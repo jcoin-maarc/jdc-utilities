@@ -14,6 +14,7 @@ setup(
         'gitpython',
         'click',
         'openpyxl',
+        'xlrd',
         'pyyaml',
         'pandera',
         'jsonpath_ng',
