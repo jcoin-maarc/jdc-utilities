@@ -18,6 +18,7 @@ setup(
         'pyyaml',
         'pandera',
         'jsonpath_ng',
+        'requests'
     ],
     entry_points='''
         [console_scripts]
