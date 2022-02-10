@@ -52,8 +52,8 @@ def run_transformfile(df,transformfile):
 
 
     for fxn_name,params in transform_mappings.items():
-            print(fxn_name)
-            print(params)
+            # print(fxn_name)
+            # print(params)
             if fxn_name=='replace_ids': #not in place so need to re assign df variable after replacing ids
                 df = replace_ids(df,**params)
             else:

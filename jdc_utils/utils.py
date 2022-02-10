@@ -26,7 +26,16 @@ def get_cell(df, address):
     return contents
 
 class Marginal:
-    """Discrete marginal distribution"""
+    """Discrete marginal distribution
+    
+    df: dataframe of values from an excel file
+    m: "marginals" --> list of dict objects containing
+        the variable name ("variable") and 
+        list of values (the excel location "n" and "label" or  the name of variable level)
+
+    n: the total number within marginal used as a check    
+    
+    """
     
     def __init__(self, df, m, n):
         
