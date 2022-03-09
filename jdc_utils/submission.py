@@ -7,11 +7,7 @@ import pandera as pa
 import pandas as pd
 import json
 import re
-# from urllib.request import urlopen
-# import requests
 
-#from gen3.auth import Gen3Auth
-#from gen3.submission import Gen3Submission
 
 from io import StringIO
 import hashlib
@@ -26,34 +22,55 @@ from collections.abc import Iterable
 
 import glob
 
-#manifest used for production deployment 
-#MANIFEST_URL = 'https://raw.githubusercontent.com/uc-cdis/cdis-manifest/master/jcoin.datacommons.io/manifest.json'
+#submission validation utilities for frictionless schemas and packaging
 
 
-def df_to_json_records(df):
+#can validate a package or resource -- starting with resource for hubs  to keep simple
+# that is, if their file conforms to schema, then they can submit to box for packaging.
+def build_package(resourcepaths):
+    ''' 
+    builds a package from tuple of resources in form 
+    of (schema,resources)
     '''
-    converts
-    a dataframe into a list of json records
+    package = Package()
+    #resource = Resource(resourcepath,schema=schema,detector=detector)
+    for schemapath,datapath in resourcepaths:
+        #detector = Detector(schema_sync=True) #Phil recommended to not use schema sync but rather get cols manually
+        schema = Schema(schemapath)
+        resource = Resource(datapath,schema=schema)
+        package.add_resource(resource)
+
+    #return messages
+    return package
+
+def create_package_validation_report(package):
+    report = validate_package(package)
+    messages = [v['message'] for v in report['errors']]
+    return messages
+
+
+def build_resource(schemapath,resourcepath):
+    ''' 
+    builds a resource from a schema and list of resources
+    or string of a resource
     '''
-    json_str = df.to_json(orient='records')
-    return json.loads(json_str)
-    
-# def get_dictionary(manifest_url):
-#     '''
-#     given a cdis manifest url pointing to a manifest json file,
-#     pull out the data dictionary (ie schema.json)
 
-#     using the manifest within the production repo ensures most updated 
-#     dictionary
+    schema = Schema(schemapath)
+    resource = Resource(resourcepath,schema=schema)
+    return resource 
 
-#     #TODO: one thought -- this may not be best way to pull production dictionary values
-#      --- may want to use built in dictionaryutils functions that pull values? 
-#     '''
-#     manifest_json = json.loads(urlopen(manifest_url).read())
-#     dictionary_url = manifest_json['global']['dictionary_url']
-#     dictionary = json.loads(urlopen(dictionary_url).read())
-#     return dictionary
+def create_resource_validation_report(resource):
+    report = validate_resource(resource)
+    messages = [task['errors'][0]['message'] for task in report['tasks'] if not report['valid']]
+    return messages
 
+
+
+
+
+
+
+# submission validation utilities for gen3 sheepdog validation 
 def get_dictionary(endpoint,node_type='_all'):
     ''' 
     get json dictionary with all references (eg if $ref then API has these properties of this ref)

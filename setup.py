@@ -18,7 +18,9 @@ setup(
         'pyyaml',
         'pandera',
         'jsonpath_ng',
-        'requests'
+        'requests',
+        'frictionless',
+        'gen3'
     ],
     entry_points='''
         [console_scripts]
