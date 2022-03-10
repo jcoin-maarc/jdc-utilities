@@ -6,7 +6,18 @@ import re
 import sys
 from collections import OrderedDict
 from numpy.random import RandomState
-#TODO: make variable names more explicit and build out documentation for notes in each function
+import shutil
+
+
+
+#general utilities
+def copy_file(file_path, target_path):
+    with open(file_path, "rb") as source:
+        with open(target_path, "wb") as target:
+            shutil.copyfileobj(source, target)
+
+
+#utilities for collecting aggregated data from templates
 def get_cell(df, address):
     """Get contents of cell in df based on Excel address (e.g., A1)"""
     

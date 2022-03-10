@@ -22,6 +22,7 @@ from collections.abc import Iterable
 
 import glob
 
+from frictionless import Schema,Resource,validate_resource,validate_package
 #submission validation utilities for frictionless schemas and packaging
 
 
@@ -54,15 +55,16 @@ def build_resource(schemapath,resourcepath):
     builds a resource from a schema and list of resources
     or string of a resource
     '''
-
+    print("SCHEMA")
     schema = Schema(schemapath)
+    print("RESOURCE")
     resource = Resource(resourcepath,schema=schema)
     return resource 
 
 def create_resource_validation_report(resource):
     report = validate_resource(resource)
-    messages = [task['errors'][0]['message'] for task in report['tasks'] if not report['valid']]
-    return messages
+    errors = [task['errors'][0] for task in report['tasks'] if not report['valid']]
+    return errors
 
 
 

@@ -8,7 +8,7 @@ http://www.augustana.ab.ca/~mohrj/algorithms/checkdigit.html.
 import csv, re
 #from dataforge import config
 #from dataforge.tools import versioned_file_resource
-from dataforge_tools import versioned_file_resource
+from jdc_utils.dataforge_tools import versioned_file_resource
 import pandas as pd
 
 # Implementation of Verhoeff check-digit algorithm
