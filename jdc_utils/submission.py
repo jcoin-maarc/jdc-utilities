@@ -55,16 +55,30 @@ def build_resource(schemapath,resourcepath):
     builds a resource from a schema and list of resources
     or string of a resource
     '''
-    print("SCHEMA")
+    #print("SCHEMA")
     schema = Schema(schemapath)
-    print("RESOURCE")
+    #print("RESOURCE")
     resource = Resource(resourcepath,schema=schema)
     return resource 
 
 def create_resource_validation_report(resource):
     report = validate_resource(resource)
-    errors = [task['errors'][0] for task in report['tasks'] if not report['valid']]
-    return errors
+    file_path_exp = parse("$..resource.path[*]")
+    file_paths = [x.value for x in file_path_exp.find(report)]
+
+    file_names = " and ".join([os.path.split(f)[-1] for f in file_paths])
+    #errors = [task['errors'][0] for task in report['tasks'] if not report['valid']]
+    errors_df = pd.DataFrame(
+                report.flatten(["code", "rowPosition", "message", "description"]),
+                columns=[
+                    "error-category",
+                    "row-number",
+                    "error-message",
+                    "general-error-description",
+                ],
+            )
+    #return {'file_names':file_names,'errors':errors,"is_valid":report['valid']}
+    return {'file_names':file_names,'errors_df':errors_df,"is_valid":report['valid']}
 
 
 

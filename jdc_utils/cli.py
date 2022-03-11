@@ -6,6 +6,8 @@ from jdc_utils.transforms import read_df, run_transformfile
 import jdc_utils.dataforge_ids as ids
 from frictionless import Schema, Resource
 from jdc_utils.utils import copy_file
+import os
+import pandas as pd
 
 # overall CLI
 @click.group()
@@ -75,40 +77,45 @@ def transform(transform_file, file_path):
     help="Path to a file. Can specify multiple files if fields span multiple files",
     multiple=True,
 )
-def validate(schema_path, file_path):
+@click.option(
+    "--file-type",
+    help="Type of file(s). Currently either baseline or time-points"
+)
+def validate(schema_path, file_path,file_type):
+    if file_type:
+        if file_type=='baseline':
+            #file_path needs to be iterable as there is the ability to have multiple resources
+            schema_path = r"C:\Users\kranz-michael\projects\frictionless-jcoin\hubs\metadata\table_schemas\table-schema-baseline.json"
     file_path = [f for f in file_path if f]  # get rid of ""
     resource = build_resource(schema_path, file_path)
     report = create_resource_validation_report(resource)
 
     validated_dir = os.path.join("jdc-data", "validated")
-    os.makedirs(validated_dir, exists=True)
+    os.makedirs(validated_dir, exist_ok=True)
 
-    if report["valid"]:
+    if report["is_valid"]:
         click.echo(
-            f"Congrats! Your file(s) passed validation! Now saving to {save_dir}"
+            f"Congrats! Your file(s) -- {report['file_names']} ---  passed validation!\n"
+            f"Now saving to {validated_dir}"
         )
         click.echo("If you're happy with them, you can proceed with submission.")
         # save to file
-        validated_file_path = os.path.join(validated_dir, os.path.split(file_path)[-1])
-        copy_file(file_path, validated_file_path)
+        for f in file_path:
+            validated_file_path = os.path.join(validated_dir, os.path.split(f)[-1])
+            copy_file(f, validated_file_path)
     else:
         click.echo(
-            f"Invalid files. Take a look below at the error report below to correct."
+            "\n\n"
+            f"{report['file_names']}: invalid.\n"
+            f"Take a look below at the error report table below to correct.\n"
+            f"We'll also save your errors to the {validated_dir}\errors.tsv file\n"
+            "----------------------------------------------------------------------"
+            "----------------------------------------------------------------------"
         )
-        click.echo(f"We'll also save your errors to the {save_dir}/errors.tsv file")
-
-        report_table = pd.DataFrame(
-            report.flatten(["code", "rowPosition", "message", "description"]),
-            columns=[
-                "error-category",
-                "row-number",
-                "error-message",
-                "general-error-description",
-            ],
-        )
-        click.echo(report_table.to_csv(sep="\t"))
+        report['errors_df'].replace('"','',inplace=True)
+        click.echo(report['errors_df'][['error-category','error-message',]].to_string(index=False))
         # append error.tsv
-        report_table.to_csv(os.path.join(validated_dir,"errors.tsv"),sep="\t")
+        report['errors_df'].to_csv(os.path.join(validated_dir,"errors.tsv"),sep="\t")
 
 cli.add_command(replace_ids, name="replace-ids")
 cli.add_command(transform, name="transform")
