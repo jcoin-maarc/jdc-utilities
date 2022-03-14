@@ -12,7 +12,7 @@ from git import Repo
 from git.exc import NoSuchPathError
 
 @contextlib.contextmanager
-def versioned_file_resource(file, remote_url=None, repo_path=None, mode='r',
+def versioned_file_resource(map_file, remote_url=None, repo_path=None, mode='r',
                             emptyok=False):
     """Open versioned file and return corresponding file object
     
@@ -37,27 +37,27 @@ def versioned_file_resource(file, remote_url=None, repo_path=None, mode='r',
         except NoSuchPathError:
             repo = Repo.clone_from(remote_url, repo_path)
     
-    filepath = os.path.join(repo_path, file)
-    file_obj = open(filepath, mode)
+    repo_map_file_path = os.path.join(repo_path, map_file)
+    repo_map_file_obj = open(repo_map_file_path, mode)
     
     try:
-        yield file_obj
+        yield repo_map_file_obj 
     
     except Exception as e:
         if repo:
-            file_obj.close()
+            repo_map_file_obj.close()
             repo.git.reset('--hard')
         raise e
     
     finally:
-        file_obj.close()
-        if not emptyok and os.path.exists(filepath):
-            flen = os.path.getsize(filepath)
+        repo_map_file_obj.close()
+        if not emptyok and os.path.exists(repo_map_file_path):
+            flen = os.path.getsize(repo_map_file_path)
         else:
             flen = True
         if not flen:
             with contextlib.suppress(FileNotFoundError):
-                os.remove(filepath)
+                os.remove(repo_map_file_path)
         if repo and repo.is_dirty(untracked_files=True):
             repo.git.add('--all')
             repo.index.commit('Commit by versioned_file_resource()')
