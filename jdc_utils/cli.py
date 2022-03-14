@@ -19,7 +19,7 @@ def cli():
 @click.command()
 @click.option(
     "--file-path",
-    help="Path to a file. Can specify multiple files if need to replace ids across multiple files",
+    help="Path to a file with locals/old ids to be replaced. Can specify multiple files if need to replace ids across multiple files",
     multiple=True,
     required=True,
 )
@@ -33,10 +33,11 @@ def cli():
     help="Path to where the git repository supporting the versioning",
     required=True,
 )
-@click.option("--map-url", help="Git bare repo set up", required=True)
-@click.option("--column", help="Name of column across files", default=None)
-def replace_ids(file_path, id_file, map_file):
-    new_dir = os.path.join("jdc-data", "replaced-ids-but-not-validated")
+@click.option("--map-url", help='Git bare repo set up -- ie the "remote url" for sharing mapped ids', default=None)
+@click.option("--column", help="Name of column across files specified with old (or local) ids. If none specified, defaults to first level (ie 0) pandas dataframe index", default=None)
+#TODO: add other possible params
+def replace_ids(file_path, id_file, map_file,map_url,column):
+    new_dir = os.path.join("jdc-data", "replaced-ids")
     for file_name in filepath:
         df = read_df(file_name)
         df_new = ids.replace_ids(
@@ -58,7 +59,7 @@ def transform(transform_file, file_path):
     run_transformfile(df, transform_file)
 
     # make transform dir
-    transform_dir = os.path.join("jdc-data", "transformed-but-not-validated")
+    transform_dir = os.path.join("jdc-data", "transformed")
     os.makedirs(transform_dir, exist_ok=True)
 
     # save file
@@ -79,6 +80,7 @@ def transform(transform_file, file_path):
 )
 @click.option(
     "--file-type",
+    type=click.Choice(['baseline', 'time-points']),
     help="Type of file(s). Currently either baseline or time-points"
 )
 def validate(schema_path, file_path,file_type):
@@ -86,6 +88,13 @@ def validate(schema_path, file_path,file_type):
         if file_type=='baseline':
             #file_path needs to be iterable as there is the ability to have multiple resources
             schema_path = r"C:\Users\kranz-michael\projects\frictionless-jcoin\hubs\metadata\table_schemas\table-schema-baseline.json"
+        elif file_type=='time-points':
+            schema_path = r"C:\Users\kranz-michael\projects\frictionless-jcoin\hubs\metadata\table_schemas\table-schema-time-points.json"
+        elif not file_type and not schema_path:
+            click.fail(
+                "Need to select the type of file(s) you are validating. For more info on options, run:\n"
+                "jdc-utils validate --help"
+            )
     file_path = [f for f in file_path if f]  # get rid of ""
     resource = build_resource(schema_path, file_path)
     report = create_resource_validation_report(resource)
