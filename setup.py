@@ -8,6 +8,7 @@ setup(
     description='Utilities for preparing and submitting data to the JDC',
     url='https://rcg.bsd.uchicago.edu/gitlab/maarc/dasc/jdc-utilities',
     packages=find_namespace_packages(where='.'),
+    package_data={'jdc_utils': ['frictionless/table_schemas/*.json']},
     install_requires=[
         'pandas',
         'pandas_flavor',

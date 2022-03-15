@@ -133,7 +133,7 @@ class IDList:
         if not mode:
             mode = 'w'
         
-        f = open(filename, mode)
+        f = open(filename, modenewline='')
         id_writer = csv.writer(f)
         if column_name:
             id_writer.writerow([column_name])
@@ -159,13 +159,12 @@ def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
 
     By default, the index is located as first index level.
 
-    :params:
-    df: input data file (pd.DataFrame)
-    id_file: list of generated ids (see the generate_ids function)
-    map_file: csv file where id mappings are stored -- this will be generated if it doesn't exist
-    map_url: the git bare repository where history is stored
-    level: if in index, this indicates which level ids are located (default is first level (0))
-    column: name of column or index where ids are stored for dataframe
+    :param df: input data file (pd.DataFrame)
+    :param id_file: list of generated ids (see the generate_ids function)
+    :param map_file: csv file where id mappings are stored -- this will be generated if it doesn't exist
+    :param map_url: the git bare repository where history is stored
+    :param level: if in index, this indicates which level ids are located (default is first level (0))
+    :param column: name of column or index where ids are stored for dataframe
 
     
     """
@@ -186,11 +185,11 @@ def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
             except KeyError:
                 raise Exception('Column {} not found in dataframe'.format(column))
     
-    # get entire list of input datasets unique ("old") ids
+    # get entire list of input datasets  ("old") ids
 
     ## if column name is in one of the indices, get these values and the old index name or use __id if no name
     if index:
-        old_ids = df.index.get_level_values(level)
+        old_ids = df.index.get_level_values(level).to_series()
         old_name = (old_ids.name if old_ids.name else '__id')
         old_ids.name = old_name
     else:
@@ -200,19 +199,13 @@ def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
         )
         old_name = column
 
-    ## make sure its only the unique ids and in a dataframe
-    old_ids = (
-        old_ids
-        .to_frame()
-        .drop_duplicates(keep='first')
-    )
-    
+
     # read in the file with list of ids generated from the generate id functions with a header in this file representing new name
     ids = pd.read_csv(id_file)
     new_name = ids.columns[0] 
-
-    #using the git repo contenxt manager created in tools.py, 
-    with versioned_file_resource(map_file, map_url, mode='a+') as f:
+    # using the git repo contenxt manager created in tools.py: given mapping file and remote url 
+    # 
+    with versioned_file_resource(map_file=map_file, remote_url=map_url, mode='a+') as f:
         
         f.seek(0)
         try:
@@ -227,22 +220,21 @@ def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
             add_header = True
         
         ## find ids needed by merging the entire list of old ids with
-        ## the already-mapped ids.
-
-        ## Required to avoid duplicating "__id" as both index level and column label
-        need_ids.index.name = None
-
+        ## the already-mapped ids and finding the ids
         need_ids = (
             old_ids
+            ## make sure its only the unique ids and in a dataframe
+            .drop_duplicates(keep='first')
+            .to_frame()
             .merge(
-                map, how='left', on=old_name, indicator=True,
+                mapped_ids, how='left', on=old_name, indicator=True,
                 validate='one_to_one'
             )
             .pipe(lambda df: df.loc[df['_merge'] == 'left_only', [old_name]]) #filter ids not mapped and then select old id column
             .reset_index(drop=True)
         )
         
-
+        # get unused ids from the generated id list 
         available_ids = (
             ids
             .merge(
@@ -255,18 +247,20 @@ def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
         
         if len(need_ids) > len(available_ids):
             raise Exception('Too few new IDs')
-        
+
+        ## Required to avoid duplicating "__id" as both index level and column label
+        need_ids.index.name = None
+
         ## map the available ids pulled from the id bank and save these new mappings to the end of the mapping file
         new_map = need_ids.merge(available_ids, how='left', left_index=True,
                                  right_index=True, validate='one_to_one')
         new_map.sort_values(by=old_name, inplace=True)
-        new_map.to_csv(f, index=False, header=add_header)
+        new_map.to_csv(f, index=False, header=add_header,line_terminator="\n")
         
         ## now that we've added the new id mappings, re-read in the mapped ids file.
         f.seek(0)
         mapped_ids = pd.read_csv(f)
         
-        ncols = len(df.columns)
         idx_names = df.index.names
         
         if '__id' not in idx_names:
@@ -292,8 +286,8 @@ def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
             df.iloc[:,colpos+len(idx_names)] = df[new_name]
             df.rename(columns={df.columns[colpos+len(idx_names)]:new_name},
                       inplace=True)
-        
-        return df.iloc[:,range(len(idx_names),len(idx_names)+ncols)]
+        return df
+        #return df.iloc[:,range(len(idx_names),len(idx_names)+len(df.columns))]
 
 
 

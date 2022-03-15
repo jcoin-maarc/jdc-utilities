@@ -1,19 +1,47 @@
 from click.testing import CliRunner
-from cli import validate 
+from cli import validate,replace_ids 
 from submission import create_resource_validation_report
 from frictionless import validate_resource,Resource,Schema
 from jsonpath_ng import parse
-schema_path = r"C:\Users\kranz-michael\projects\frictionless-jcoin\hubs\metadata\table_schemas\table-schema-baseline.json"
-#file_path = (r"C:\Users\kranz-michael\projects\frictionless-jcoin\hubs\data\tests\test1.tsv",r"C:\Users\kranz-michael\projects\frictionless-jcoin\hubs\data\tests\test1.tsv")
-#file_path = r"C:\Users\kranz-michael\projects\frictionless-jcoin\hubs\data\tests\test1.tsv"
-file_path = (r"C:\Users\kranz-michael\projects\rcg-bsd-gitlab\jcoin-maarc\hubs\general\quarterly-report-2021q4\university-of-kentucky\demographic-university-of-kentucky-client.tsv","")
-
-
-
 
 runner = CliRunner()
-result = runner.invoke(validate,["--schema-path",schema_path,"--file-path",file_path])
-print(result.output)
+
+
+#replace id test
+
+# jdc-utils replace-ids \
+# --id-file C:/Users/kranz-michael/projects/test-ids/id_store/test_submitter_ids.txt \
+#  --map-file C:/Users/kranz-michael/projects/test-ids/id_store/id_mappings.csv \
+# --map-url C:/Users/kranz-michael/projects/test-ids-secrets.git \
+# --column record_id \
+# --file-path C:/Users/kranz-michael/projects/test-ids/local_files/*.csv
+
+replace_id_args = [
+    '--id-file','C:/Users/kranz-michael/projects/test-ids/id_store/test_submitter_ids.txt',
+    '--map-file','C:/Users/kranz-michael/projects/test-ids/id_store/id_mappings.csv',
+    '--map-url','C:/Users/kranz-michael/projects/test-ids-secrets.git',
+    '--column','record_id',
+    '--file-path','C:/Users/kranz-michael/projects/test-ids/local_files/*.csv'
+]
+
+result = runner.invoke(replace_ids,replace_id_args)
+
+
+# validate test
+
+# jdc-utils validate --file-path baseline_valid.tsv --file-type baseline
+# validate_args = [
+#     '--file-path','C:/Users/kranz-michael/projects/test-ids/baseline_valid.tsv',
+#     '--file-type','baseline'
+# ]
+# result = runner.invoke(validate,validate_args)
+
+
+# 
+
+
+# result = runner.invoke(validate,["--schema-path",schema_path,"--file-path",file_path])
+# print(result.output)
 # from frictionless import Schema,Resource
 # schema = Schema(schema_path)
 # resource = Resource([f for f in file_path if f] ,schema=schema)

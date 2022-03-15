@@ -4,10 +4,11 @@ import click
 from jdc_utils.submission import build_resource, create_resource_validation_report
 from jdc_utils.transforms import read_df, run_transformfile
 import jdc_utils.dataforge_ids as ids
-from frictionless import Schema, Resource
 from jdc_utils.utils import copy_file
 import os
 import pandas as pd
+import glob 
+from pathlib import Path 
 
 # overall CLI
 @click.group()
@@ -15,10 +16,10 @@ def cli():
     """CLI for JDC utilities"""
     pass
 
-
 @click.command()
 @click.option(
     "--file-path",
+    "file_paths",
     help="Path to a file with locals/old ids to be replaced. Can specify multiple files if need to replace ids across multiple files",
     multiple=True,
     required=True,
@@ -31,20 +32,28 @@ def cli():
 @click.option(
     "--map-file",
     help="Path to where the git repository supporting the versioning",
-    required=True,
+    default=None
 )
 @click.option("--map-url", help='Git bare repo set up -- ie the "remote url" for sharing mapped ids', default=None)
 @click.option("--column", help="Name of column across files specified with old (or local) ids. If none specified, defaults to first level (ie 0) pandas dataframe index", default=None)
 #TODO: add other possible params
-def replace_ids(file_path, id_file, map_file,map_url,column):
-    new_dir = os.path.join("jdc-data", "replaced-ids")
-    for file_name in filepath:
-        df = read_df(file_name)
-        df_new = ids.replace_ids(
-            df, id_file=id_file, map_file=map_file, map_url=map_url, column=column
-        )
-        new_file_dir = os.path.join(new_dir, file_name.split("/")[-1])
-        df_new.to_csv(new_file_dir)
+def replace_ids(file_paths, id_file, map_file,map_url,column):
+    replace_ids_dir = os.path.join("jdc-data", "replaced-ids")
+    os.makedirs(replace_ids_dir, exist_ok=True)
+
+    for file_path in file_paths:
+        #glob.glob allows support for both wildcards (*) and actual file paths
+        file_path_with_glob_regexs = glob.glob(file_path) #if not a regex, will just return the filepath within list
+        for file_path_glob in file_path_with_glob_regexs:
+            df = read_df(file_path_glob)
+            df_new = ids.replace_ids(
+                df, id_file=id_file, map_file=map_file, map_url=map_url, column=column
+            )
+
+            file_name = Path(file_path_glob).name
+            new_file_dir = os.path.join(replace_ids_dir, file_name)
+            df_new.to_csv(new_file_dir)
+            click.echo(f"Replaced local with jdc ids for: {file_name}")
 
 
 @click.command()
@@ -84,12 +93,15 @@ def transform(transform_file, file_path):
     help="Type of file(s). Currently either baseline or time-points"
 )
 def validate(schema_path, file_path,file_type):
+
+    #get the directory of package and then add join with where the table schemas live
+    schemas_dir = os.path.join(os.path.dirname(__file__), 'frictionless','table_schemas')
     if file_type:
         if file_type=='baseline':
             #file_path needs to be iterable as there is the ability to have multiple resources
-            schema_path = r"C:\Users\kranz-michael\projects\frictionless-jcoin\hubs\metadata\table_schemas\table-schema-baseline.json"
+            schema_path = os.path.join(schemas_dir,'table-schema-baseline.json')
         elif file_type=='time-points':
-            schema_path = r"C:\Users\kranz-michael\projects\frictionless-jcoin\hubs\metadata\table_schemas\table-schema-time-points.json"
+            schema_path = os.path.join(schemas_dir,'table-schema-time-points.json')
         elif not file_type and not schema_path:
             click.fail(
                 "Need to select the type of file(s) you are validating. For more info on options, run:\n"
@@ -118,8 +130,8 @@ def validate(schema_path, file_path,file_type):
             f"{report['file_names']}: invalid.\n"
             f"Take a look below at the error report table below to correct.\n"
             f"We'll also save your errors to the {validated_dir}\errors.tsv file\n"
-            "----------------------------------------------------------------------"
-            "----------------------------------------------------------------------"
+            "----------------------------------------------------------------------\n"
+            "----------------------------------------------------------------------\n"
         )
         report['errors_df'].replace('"','',inplace=True)
         click.echo(report['errors_df'][['error-category','error-message',]].to_string(index=False))

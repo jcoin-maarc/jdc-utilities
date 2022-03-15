@@ -26,7 +26,7 @@ def read_df(file_path,**kwargs):
     elif file_type=='xls':
         df = pd.read_excel(file_path,engine='xlrd',**kwargs)
     #TO ADD:
-    #redcap 
+    #redcap, from internet
     else:
         sys.exit("Data type not supported")
     return df
@@ -143,20 +143,19 @@ def rename_and_change_values(df:pd.DataFrame,name_and_values:dict):
         if 'name' in new_name_and_values.keys():
             df.rename(columns={current_name: new_name_and_values['name']}, inplace=True)
 
-# @pf.register_dataframe_method
-# def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
-#     ''' 
-#     uses dataforge's replace_ids function to get ids 
-#     Note: no inplace option right now so need to manually plug in to run_transforms.
+@pf.register_dataframe_method
+def shift_dates(df,index_date_column_name,index_date_type,date_columns,convert_to_days=True):
+    '''
+    Shift dates around a specified index date and convert to days.
+    ''' 
 
-#     id_file: file where the list of available generated ids lives
-#     map_file: csv file where current old_id to new_id mappings are tracked
-    
-#     ''' 
-#     id_file_path = Path(id_file)
-#     map_file_path = Path(map_file)
-#     map_url_path = Path(map_url)
-#     return replace_ids(df, id_file_path, map_file_path, map_url_path, level=0, column=None)
+    index_date = pd.to_datetime(df[index_date_column_name])
+    df['index_date'] = index_date_type
 
-
-
+    for diff_column,date_column in date_columns:
+        date_delta = pd.to_datetime(df[date_column]) - index_date 
+        if convert_to_days:
+            df[diff_column] = date_delta.days
+        else:
+            df[diff_column] = date_delta
+        del df[date_column]

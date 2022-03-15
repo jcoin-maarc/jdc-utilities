@@ -38,7 +38,7 @@ def versioned_file_resource(map_file, remote_url=None, repo_path=None, mode='r',
             repo = Repo.clone_from(remote_url, repo_path)
     
     repo_map_file_path = os.path.join(repo_path, map_file)
-    repo_map_file_obj = open(repo_map_file_path, mode)
+    repo_map_file_obj = open(repo_map_file_path, mode,newline='')
     
     try:
         yield repo_map_file_obj 
@@ -74,10 +74,10 @@ def shift_dates(df, index_date, date_cols, merge_on=None):
     :param index_date: Dates around which dates in df will be shifted
     :type index_date: Series
     :param date_cols: Date column(s) in df to be shifted
-    :type date_cols: str or list
     :param merge_on: Column(s) containing key(s) for merging index_date onto
-        df; if None then df and index_date must have the same index
-    :type merge_on: str or list, optional
+        df; if None then df and index_date must have the same inde,optional
+
+    shifting 6 months around date 
     """
     
     cols = df.columns.tolist()
@@ -93,3 +93,7 @@ def shift_dates(df, index_date, date_cols, merge_on=None):
         new_df[col] = new_df[col] - new_df[new_df.columns[-1]]
     
     return new_df[cols]
+
+#pass get new index date -- random prob, if index already there (182)
+#repo for dates
+#local 

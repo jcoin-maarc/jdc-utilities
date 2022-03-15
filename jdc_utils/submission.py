@@ -55,10 +55,9 @@ def build_resource(schemapath,resourcepath):
     builds a resource from a schema and list of resources
     or string of a resource
     '''
-    #print("SCHEMA")
+    detector = Detector(schema_sync=True)
     schema = Schema(schemapath)
-    #print("RESOURCE")
-    resource = Resource(resourcepath,schema=schema)
+    resource = Resource(resourcepath,schema=schema,detector=detector)
     return resource 
 
 def create_resource_validation_report(resource):
@@ -77,7 +76,6 @@ def create_resource_validation_report(resource):
                     "general-error-description",
                 ],
             )
-    #return {'file_names':file_names,'errors':errors,"is_valid":report['valid']}
     return {'file_names':file_names,'errors_df':errors_df,"is_valid":report['valid']}
 
 
