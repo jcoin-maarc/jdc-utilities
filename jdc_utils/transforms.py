@@ -8,7 +8,7 @@ import re
 from collections import OrderedDict
 import pandas_flavor as pf
 from pathlib import Path
-from jdc.utils.dataforge_tools import shift_dates
+from jdc_utils.dataforge_tools import shift_dates
 
 def read_df(file_path,**kwargs):
     '''
