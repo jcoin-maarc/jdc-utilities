@@ -22,37 +22,51 @@ def cli():
     "file_paths",
     help="Path to a file with locals/old ids to be replaced. Can specify multiple files if need to replace ids across multiple files",
     multiple=True,
-    required=True,
+    #required=True,
 )
 @click.option(
     "--id-file",
-    help="path to csv where the id mappings are stored -- this will be generated if file does not exist",
-    required=True,
+    help="Path to where the generated ids exist",
+    #required=True,
 )
 @click.option(
     "--map-file",
-    help="Path to where the git repository supporting the versioning",
+    help="path to csv where the id mappings are stored -- this will be generated if file does not exist",
     default=None
 )
 @click.option("--map-url", help='Git bare repo set up -- ie the "remote url" for sharing mapped ids', default=None)
 @click.option("--column", help="Name of column across files specified with old (or local) ids. If none specified, defaults to first level (ie 0) pandas dataframe index", default=None)
+@click.option("--config-file", help="A configuration file containing all required replace-id fields", default=None)
+
 #TODO: add other possible params
-def replace_ids(file_paths, id_file, map_file,map_url,column):
+def replace_ids(file_paths, id_file, map_file,map_url,column,config_file=None):
     replace_ids_dir = os.path.join("jdc-data", "replaced-ids")
     os.makedirs(replace_ids_dir, exist_ok=True)
 
+    #if no config file, then need these params
+    if not config_file:
+        assert map_file
+        assert id_file
+        assert file_paths
     for file_path in file_paths:
         #glob.glob allows support for both wildcards (*) and actual file paths
         file_path_with_glob_regexs = glob.glob(file_path) #if not a regex, will just return the filepath within list
         for file_path_glob in file_path_with_glob_regexs:
             df = read_df(file_path_glob)
-            df_new = ids.replace_ids(
-                df, id_file=id_file, map_file=map_file, map_url=map_url, column=column
-            )
+
+            if config_file:
+                with open(config_file,'r') as f:
+                    config = yaml.safe_load(f)
+                replace_id_params = config['replace_ids']
+                df_new = ids.replace_ids(df, **replace_id_params)
+            else:
+                df_new = ids.replace_ids(
+                    df, id_file=id_file, map_file=map_file, map_url=map_url, column=column
+                )
 
             file_name = Path(file_path_glob).name
             new_file_dir = os.path.join(replace_ids_dir, file_name)
-            df_new.to_csv(new_file_dir)
+            df_new.to_csv(new_file_dir,index=False)
             click.echo(f"Replaced local with jdc ids for: {file_name}")
 
 
