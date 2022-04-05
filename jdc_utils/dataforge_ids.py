@@ -142,7 +142,9 @@ class IDList:
         
         f.close()
 
+
 def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
+
     """Replace IDs in DataFrame and store mapping
     
     Index column containing old IDs may be either named or unnamed. With
@@ -168,14 +170,11 @@ def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
     column: name of column or index where ids are stored for dataframe
 
     
-    """
-    
+    """    
     # if not map_url:
     #     map_url = config['map_url'].get(str)
     
     index = True
-
-    #check if the specified column name is within one of the index levels (can be a Multiindex)
     if column:
         if column in df.index.names:
             level = df.index.names.index(column)
@@ -186,97 +185,64 @@ def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
             except KeyError:
                 raise Exception('Column {} not found in dataframe'.format(column))
     
-    # get entire list of input datasets unique ("old") ids
-
-    ## if column name is in one of the indices, get these values and the old index name or use __id if no name
     if index:
         old_ids = df.index.get_level_values(level)
         old_name = (old_ids.name if old_ids.name else '__id')
         old_ids.name = old_name
     else:
-        old_ids = (
-            df[column]
-            .reset_index(drop=True)
-        )
+        old_ids = df[column].reset_index(drop=True)
         old_name = column
-
-    ## make sure its only the unique ids and in a dataframe
-    old_ids = (
-        old_ids
-        .to_frame()
-        .drop_duplicates(keep='first')
-    )
     
-    # read in the file with list of ids generated from the generate id functions with a header in this file representing new name
     ids = pd.read_csv(id_file)
-    new_name = ids.columns[0] 
-
-    #using the git repo contenxt manager created in tools.py, 
+    new_name = ids.columns[0]
+    
     with versioned_file_resource(map_file, map_url, mode='a+') as f:
+        
+        # TODO Handle differences in dtype between new local IDs and those in map
         
         f.seek(0)
         try:
-            ## if able to read in data, so will append file further down stream in this code (and wont want headers)
-            mapped_ids = pd.read_csv(f)
+            map = pd.read_csv(f)
             add_header = False
-        ## if no data in file that was created or opened by context manager
         except pd.errors.EmptyDataError:
-            #initiate a mapping df to add headers
-            mapped_ids = pd.DataFrame(columns = [old_name, new_name])
-            # indicates headers will be added to new data as file is empty
+            map = pd.DataFrame(columns = [old_name, new_name])
             add_header = True
         
-        ## find ids needed by merging the entire list of old ids with
-        ## the already-mapped ids.
-
-        ## Required to avoid duplicating "__id" as both index level and column label
-        old_ids.index.name = None 
-        print(old_ids)
-
-        need_ids = (
-            old_ids
-            .merge(
-                mapped_ids, how='left', on=old_name, indicator=True,
-                validate='one_to_one'
-            )
-            .pipe(lambda df: df.loc[df['_merge'] == 'left_only', [old_name]]) #filter ids not mapped and then select old id column
-            .reset_index(drop=True)
-        )
-   
-
-        available_ids = (
-            ids
-            .merge(
-                mapped_ids, how='left', on=new_name, indicator=True,
-                validate='one_to_one'
-            )
-            .pipe(lambda df: df.loc[df['_merge'] == 'left_only', [new_name]]) #filter ids not mapped and then select old id column
-            .reset_index(drop=True)
-        )
+        need_ids = old_ids.to_frame().drop_duplicates(keep='first')
+        # Required to avoid duplicating "__id" as both index level and column label
+        need_ids.index.name = None
+        need_ids = need_ids.merge(map, how='left', on=old_name, indicator=True,
+                                  validate='one_to_one')
+        need_ids = need_ids.loc[need_ids['_merge'] == 'left_only', [old_name]].\
+                            reset_index(drop=True)
+        
+        available_ids = ids.merge(map, how='left', on=new_name, indicator=True,
+                                  validate='one_to_one')
+        available_ids = available_ids.loc[available_ids['_merge'] == 'left_only',
+                                          [new_name]].reset_index(drop=True)
         
         if len(need_ids) > len(available_ids):
             raise Exception('Too few new IDs')
         
-        ## map the available ids pulled from the id bank and save these new mappings to the end of the mapping file
         new_map = need_ids.merge(available_ids, how='left', left_index=True,
                                  right_index=True, validate='one_to_one')
         new_map.sort_values(by=old_name, inplace=True)
+        # TODO Set delimiter to tab
+        # TODO See if I can get rid of extra lines on Windows
         new_map.to_csv(f, index=False, header=add_header)
         
-        ## now that we've added the new id mappings, re-read in the mapped ids file.
         f.seek(0)
-        mapped_ids = pd.read_csv(f)
+        map = pd.read_csv(f)
         
         ncols = len(df.columns)
         idx_names = df.index.names
         
         if '__id' not in idx_names:
             df['__id'] = old_ids.tolist()
-        # should this include an else statement for the reset index for easier readability?
-        df.reset_index(drop=False, inplace=True)
-        df = df.merge(mapped_ids, how='left', left_on='__id', right_on=old_name)
         
-        # if old name is in the the index
+        df.reset_index(drop=False, inplace=True)
+        df = df.merge(map, how='left', left_on='__id', right_on=old_name)
+        
         if index:
             df.iloc[:,level] = df[new_name]
             df.rename(columns={df.columns[level]:new_name}, inplace=True)
