@@ -230,7 +230,8 @@ def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
         ## the already-mapped ids.
 
         ## Required to avoid duplicating "__id" as both index level and column label
-        need_ids.index.name = None
+        old_ids.index.name = None 
+        print(old_ids)
 
         need_ids = (
             old_ids
@@ -241,7 +242,7 @@ def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
             .pipe(lambda df: df.loc[df['_merge'] == 'left_only', [old_name]]) #filter ids not mapped and then select old id column
             .reset_index(drop=True)
         )
-        
+   
 
         available_ids = (
             ids
