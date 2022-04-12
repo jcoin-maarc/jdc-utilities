@@ -40,7 +40,7 @@ def cli():
 
 #TODO: add other possible params
 def replace_ids(file_paths, id_file, map_file,map_url,column,config_file=None):
-    replace_ids_dir = os.path.join("jdc-data", "replaced-ids")
+    replace_ids_dir = os.path.join("tmp", "jdc",'replaced_ids')
     os.makedirs(replace_ids_dir, exist_ok=True)
 
     #if no config file, then need these params
@@ -64,10 +64,10 @@ def replace_ids(file_paths, id_file, map_file,map_url,column,config_file=None):
                     df, id_file=id_file, map_file=map_file, map_url=map_url, column=column
                 )
 
-            file_name = Path(file_path_glob).name
-            new_file_dir = os.path.join(replace_ids_dir, file_name)
+            file_name = Path(file_path_glob).stem
+            new_file_dir = os.path.join(replace_ids_dir, file_name+'.csv')
             df_new.to_csv(new_file_dir,index=False)
-            click.echo(f"Replaced local with jdc ids for: {file_name}")
+            click.echo(f"Replaced local with jdc ids in: {os.path.join(os.getcwd(),new_file_dir)}")
 
 
 @click.command()
