@@ -1,2 +1,0 @@
-	error-category	row-number	error-message	general-error-description
-0	scheme-error		The data source could not be successfully loaded: [Errno 2] No such file or directory: 'C'	Data reading error because of incorrect scheme.

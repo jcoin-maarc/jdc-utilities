@@ -10,6 +10,8 @@ import contextlib
 from urllib.parse import urlparse
 from git import Repo
 from git.exc import NoSuchPathError
+import random 
+import pandas as pd
 #from sys import platform # if you need to know which OS (window, linux, mac)
 
 @contextlib.contextmanager
@@ -94,31 +96,116 @@ def versioned_file_resource(map_file, remote_url=None, repo_path=None, mode='r',
                 repo.head.reset('HEAD~1', index=True, working_tree=True)
                 raise e
 
-def shift_dates(df, index_date, date_cols, merge_on=None):
-    """Shift dates around an index date
+# def shift_dates(df, index_date, date_cols, merge_on=None):
+#     """Shift dates around an index date
     
-    :param index_date: Dates around which dates in df will be shifted
-    :type index_date: Series
-    :param date_cols: Date column(s) in df to be shifted
-    :param merge_on: Column(s) containing key(s) for merging index_date onto
-        df; if None then df and index_date must have the same inde,optional
+#     :param index_date: Dates around which dates in df will be shifted
+#     :type index_date: Series
+#     :param date_cols: Date column(s) in df to be shifted
+#     :param merge_on: Column(s) containing key(s) for merging index_date onto
+#         df; if None then df and index_date must have the same inde,optional
 
-    """
+#     """
     
-    cols = df.columns.tolist()
-    if merge_on:
-        new_df = df.merge(index_date, how='left', on=merge_on,
-                          validate='many_to_one')
-    else:
-        new_df = df.merge(index_date, how='left', left_index=True,
-                          right_index=True, validate='many_to_one')
+#     cols = df.columns.tolist()
+#     if merge_on:
+#         new_df = df.merge(index_date, how='left', on=merge_on,
+#                           validate='many_to_one')
+#     else:
+#         new_df = df.merge(index_date, how='left', left_index=True,
+#                           right_index=True, validate='many_to_one')
     
+#     date_cols = [date_cols] if isinstance(date_cols, str) else date_cols
+#     for col in date_cols:
+#         new_df[col] = new_df[col] - new_df[new_df.columns[-1]]
+
+#     return new_df[cols]
+
+def shift_dates(df,id_col,date_cols, map_file,map_url=None,shift_amount=365):
+
+    """Shift dates in a DataFrame by a random number of specified days 
+    from a randomly determined uniform distribution and range
+    and store this random factor in a file
+
+    :params:
+    df: input data file (pd.DataFrame)
+    id_col: name of id column in dataframe and in map_file
+    date_cols: the date column (str) or columns (list/iterable) to be shifted
+    map_file: csv file where shift amount is stored and mapped to an id -- 
+        this will be generated if it doesn't exist
+    map_url: the git bare repository where history is stored
+    shift_amount: the number of days to shift your date by
+    level: if in index, this indicates which level ids are located (default is first level (0))
+    column: name of column or index where ids are stored for dataframe
+
+    """   
     date_cols = [date_cols] if isinstance(date_cols, str) else date_cols
-    for col in date_cols:
-        new_df[col] = new_df[col] - new_df[new_df.columns[-1]]
-    
-    return new_df[cols]
+    shift_col = 'days_for_shift_date'
 
-#pass get new index date -- random prob, if index already there (182)
-#repo for dates
-#local 
+    #get unique ids from df
+    if id_col in df.columns:
+        ids = list(set(df[id_col].to_list()))
+    elif id_col in df.index.names:
+        ids = list(set(df.index.get_level_values(id_col).to_list()))
+    else:
+        raise Exception("The specified id column -- {id_col} -- is not in the df")
+
+    #check to make sure date columns are in the df
+    for date_col in date_cols:
+        assert date_col in df.columns or date_col in df.index.names
+ 
+    #open id to date shift amount mapping, apply new amounts, and shift
+    with versioned_file_resource(map_file, map_url, mode='a+') as f:      
+        f.seek(0)
+        try:
+            map = pd.read_csv(f)[[id_col,shift_col]]
+            add_header = False
+        except pd.errors.EmptyDataError:
+            map = pd.DataFrame(columns = [id_col,shift_col])
+            add_header = True 
+        except KeyError:
+            assert id_col in map.columns,'The specified id was not found in mapping file'
+            map[shift_col] = None #if no date_shifted column in specified mapping than instantiate 
+            add_header = False
+        
+
+        #need_ids = need date shifted amount 
+        #TODO: change var name
+        need_ids = pd.Series(ids).rename(id_col).to_frame()
+        need_ids = need_ids.merge(map, how='left', on=id_col, indicator=True,
+                                  validate='one_to_one')
+        need_ids = need_ids.loc[need_ids['_merge'] == 'left_only', [id_col]].\
+                            reset_index(drop=True)
+        
+
+        # add random int of range specified to ids that need it
+        new_map = need_ids.copy()
+        shift_int = int(shift_amount/2)
+        new_map[shift_col] = new_map.date_shifted_amount.apply(lambda x: random.randint(-shift_int,shift_int))
+        new_map.sort_values(by=id_col, inplace=True)
+        # TODO Set delimiter to tab
+        # TODO See if I can get rid of extra lines on Windows
+        new_map.to_csv(f, index=False, header=add_header)
+        
+        #reopen file and shift dates
+        f.seek(0)
+        map = pd.read_csv(f)
+        
+        df.reset_index(drop=False, inplace=True)
+        df = df.merge(map, how='left', on=id_col)
+
+
+        #shift dates by specified number of days
+        delta = df[shift_col].apply(lambda x: pd.TimeDelta(days=x))
+        for date_col in date_cols:
+            dt = pd.to_datetime(df[date_col])
+            df['shifted_' + date_col] = (dt + delta).strftime(format='%Y%m%d')
+
+        #TODO: optional to drop nonshifted dates
+
+        return df
+
+#%%
+df = pd.read_csv(r"C:\Users\kranz-michael\projects\jcoin-uky\tmp\replaced-ids\FOR UPLOAD_JCOINBaselineIntervi_DATA_LABELS_2022-04-05_1739.csv",
+skiprows=lambda x:x==1)
+shift_dates(df,'record_id','datetime_start','id_mapping.csv')

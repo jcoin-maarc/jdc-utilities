@@ -133,7 +133,7 @@ class IDList:
         if not mode:
             mode = 'w'
         
-        f = open(filename, modenewline='')
+        f = open(filename, newline='')
         id_writer = csv.writer(f)
         if column_name:
             id_writer.writerow([column_name])
@@ -202,7 +202,7 @@ def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
         
         f.seek(0)
         try:
-            map = pd.read_csv(f)
+            map = pd.read_csv(f)[[old_name, new_name]]
             add_header = False
         except pd.errors.EmptyDataError:
             map = pd.DataFrame(columns = [old_name, new_name])
@@ -232,7 +232,7 @@ def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
         new_map.to_csv(f, index=False, header=add_header)
         
         f.seek(0)
-        map = pd.read_csv(f)
+        map = pd.read_csv(f)[[old_name, new_name]]
         
         ncols = len(df.columns)
         idx_names = df.index.names
