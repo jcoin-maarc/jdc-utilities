@@ -85,7 +85,7 @@ def replace_ids(file_paths, id_file, map_file,map_url,column,config_file=None):
 )
 @click.option("--map-url", help='Git bare repo set up -- ie the "remote url" for sharing mapped ids', default=None)
 @click.option("--id-column", help="Name of column across files specified ids.", default=None)
-@click.option("--date-column", help="Name of date column to be shifted", default=None)
+@click.option("--date-column", help="Name of date column to be shifted", default=None,multiple=True)
 @click.option("--config-file", help="A configuration file containing all required shift date fields", default=None)
 
 def shift_dates(file_paths,map_file,map_url,id_column,config_file=None):
@@ -96,6 +96,7 @@ def shift_dates(file_paths,map_file,map_url,id_column,config_file=None):
     if not config_file:
         assert map_file
         assert file_paths
+        assert date_column
     for file_path in file_paths:
         #glob.glob allows support for both wildcards (*) and actual file paths
         file_path_with_glob_regexs = glob.glob(file_path) #if not a regex, will just return the filepath within list
@@ -109,7 +110,11 @@ def shift_dates(file_paths,map_file,map_url,id_column,config_file=None):
                 df_new = tools.shift_dates(df, **params)
             else:
                 df_new = tools.shift_dates(
-                    df,  map_file=map_file, map_url=map_url, id_column=column
+                    df, 
+                     map_file=map_file,
+                      map_url=map_url, 
+                      id_col=id_column,
+                      date_cols=date_column
                 )
 
             file_name = Path(file_path_glob).stem
@@ -159,16 +164,13 @@ def validate(schema_path, file_path,file_type):
     #get the directory of package and then add join with where the table schemas live
     schemas_dir = os.path.join(os.path.dirname(__file__), 'frictionless','table_schemas')
     if file_type:
-        if file_type=='baseline':
-            #file_path needs to be iterable as there is the ability to have multiple resources
-            schema_path = os.path.join(schemas_dir,'table-schema-baseline.json')
-        elif file_type=='time-points':
-            schema_path = os.path.join(schemas_dir,'table-schema-time-points.json')
-        elif not file_type and not schema_path:
-            click.fail(
-                "Need to select the type of file(s) you are validating. For more info on options, run:\n"
-                "jdc-utils validate --help"
-            )
+        with open(os.path.join(schemas_dir,'table_schema_urls.yaml')) as f: 
+            schema_path[file_type] = yaml.safe_load(f)
+    else:
+        click.fail(
+            "Need to select the type of file(s) you are validating. For more info on options, run:\n"
+            "jdc-utils validate --help"
+        )
     file_path = [f for f in file_path if f]  # get rid of ""
     resource = build_resource(schema_path, file_path)
     report = create_resource_validation_report(resource)
