@@ -4,6 +4,7 @@ import click
 from jdc_utils.submission import build_resource, create_resource_validation_report
 from jdc_utils.transforms import read_df, run_transformfile
 import jdc_utils.dataforge_ids as ids
+import jdc_utils.dataforge_tools as tools
 from jdc_utils.utils import copy_file
 import os
 import pandas as pd
@@ -68,6 +69,53 @@ def replace_ids(file_paths, id_file, map_file,map_url,column,config_file=None):
             new_file_dir = os.path.join(replace_ids_dir, file_name+'.csv')
             df_new.to_csv(new_file_dir,index=False)
             click.echo(f"Replaced local with jdc ids in: {os.path.join(os.getcwd(),new_file_dir)}")
+
+@click.command()
+@click.option(
+    "--file-path",
+    "file_paths",
+    help="Path to a file with dates to be shifted. Can specify multiple files if column name is the same across files",
+    multiple=True,
+    #required=True,
+)
+@click.option(
+    "--map-file",
+    help="path to csv where the id mappings are stored -- this will be generated if file does not exist",
+    default=None
+)
+@click.option("--map-url", help='Git bare repo set up -- ie the "remote url" for sharing mapped ids', default=None)
+@click.option("--id-column", help="Name of column across files specified ids.", default=None)
+@click.option("--date-column", help="Name of date column to be shifted", default=None)
+@click.option("--config-file", help="A configuration file containing all required shift date fields", default=None)
+
+def shift_dates(file_paths,map_file,map_url,id_column,config_file=None):
+    shifted_dates_dir = os.path.join("tmp", "jdc",'shifted_dates')
+    os.makedirs(shifted_dates_dir, exist_ok=True)
+
+    #if no config file, then need these params
+    if not config_file:
+        assert map_file
+        assert file_paths
+    for file_path in file_paths:
+        #glob.glob allows support for both wildcards (*) and actual file paths
+        file_path_with_glob_regexs = glob.glob(file_path) #if not a regex, will just return the filepath within list
+        for file_path_glob in file_path_with_glob_regexs:
+            df = read_df(file_path_glob)
+
+            if config_file:
+                with open(config_file,'r') as f:
+                    config = yaml.safe_load(f)
+                params = config['shift_dates']
+                df_new = tools.shift_dates(df, **params)
+            else:
+                df_new = tools.shift_dates(
+                    df,  map_file=map_file, map_url=map_url, id_column=column
+                )
+
+            file_name = Path(file_path_glob).stem
+            new_file_dir = os.path.join(replace_ids_dir, file_name+'.csv')
+            df_new.to_csv(new_file_dir,index=False)
+            click.echo(f"Shifting dates and saving to: {os.path.join(os.getcwd(),new_file_dir)}")
 
 
 @click.command()
@@ -153,6 +201,7 @@ def validate(schema_path, file_path,file_type):
         report['errors_df'].to_csv(os.path.join(validated_dir,"errors.tsv"),sep="\t")
 
 cli.add_command(replace_ids, name="replace-ids")
+cli.add_command(shift_dates, name="shift-dates")
 cli.add_command(transform, name="transform")
 cli.add_command(validate, name="validate")
 
