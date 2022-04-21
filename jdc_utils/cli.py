@@ -17,7 +17,14 @@ def cli():
     """CLI for JDC utilities"""
     pass
 
-@click.command()
+@click.command(help=''' 
+
+
+This function is used to replace (and map) local ids assigned at the time of data collection
+to separate ids from a generated list of ids.
+
+'''
+)
 @click.option(
     "--file-path",
     "file_paths",
@@ -70,7 +77,23 @@ def replace_ids(file_paths, id_file, map_file,map_url,column,config_file=None):
             df_new.to_csv(new_file_dir,index=False)
             click.echo(f"Replaced local with jdc ids in: {os.path.join(os.getcwd(),new_file_dir)}")
 
-@click.command()
+@click.command(help=''' 
+This function takes a specified date field and shifts them around a specified number of days (ie shift amount).
+This shifted amount is selected randomly within an interval of the previous 182 days and next 182 days.
+This shift amount is fixed within each individual such that the intervals between dates are retained to provide the 
+capability to calculate derived variables such as days from a given visit/timepoint (e.g., days from baseline or 
+days from release). 
+
+As with the replace id function, the mappings (i.e., id to the random # of days shifted) is stored in a separate file
+to reduce deductive disclosure risk from PII linkage with date variables.
+
+However, by storing this shift amount (rather than randomly shifting at each data update, 
+the exact dates can be recovered
+simply by subtracting this added random amount to the shifted date.
+
+Additionally, this function accepts remote version control history (ie git repo) to save previous versions.
+'''
+)
 @click.option(
     "--file-path",
     "file_paths",
@@ -123,7 +146,8 @@ def shift_dates(file_paths,map_file,map_url,id_column,config_file=None):
             click.echo(f"Shifting dates and saving to: {os.path.join(os.getcwd(),new_file_dir)}")
 
 
-@click.command()
+@click.command(
+)
 @click.option("--transform-file", help="Path to the given transform file")
 @click.option("--file-path", help="Path to the given file")
 def transform(transform_file, file_path):
@@ -135,7 +159,7 @@ def transform(transform_file, file_path):
     run_transformfile(df, transform_file)
 
     # make transform dir
-    transform_dir = os.path.join("jdc-data", "transformed")
+    transform_dir = os.path.join("tmp","jdc","transformed")
     os.makedirs(transform_dir, exist_ok=True)
 
     # save file
