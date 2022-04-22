@@ -10,6 +10,7 @@ import os
 import pandas as pd
 import glob 
 from pathlib import Path 
+import yaml
 
 # overall CLI
 @click.group()
@@ -111,7 +112,7 @@ Additionally, this function accepts remote version control history (ie git repo)
 @click.option("--date-column", help="Name of date column to be shifted", default=None,multiple=True)
 @click.option("--config-file", help="A configuration file containing all required shift date fields", default=None)
 
-def shift_dates(file_paths,map_file,map_url,id_column,config_file=None):
+def shift_dates(file_paths,map_file,map_url,id_column,date_column,config_file):
     shifted_dates_dir = os.path.join("tmp", "jdc",'shifted_dates')
     os.makedirs(shifted_dates_dir, exist_ok=True)
 
@@ -141,7 +142,7 @@ def shift_dates(file_paths,map_file,map_url,id_column,config_file=None):
                 )
 
             file_name = Path(file_path_glob).stem
-            new_file_dir = os.path.join(replace_ids_dir, file_name+'.csv')
+            new_file_dir = os.path.join(shifted_dates_dir, file_name+'.csv')
             df_new.to_csv(new_file_dir,index=False)
             click.echo(f"Shifting dates and saving to: {os.path.join(os.getcwd(),new_file_dir)}")
 
