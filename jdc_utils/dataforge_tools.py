@@ -170,12 +170,16 @@ def shift_dates(df,id_col,date_cols, map_file,map_url=None,shift_amount=365):
                 if map[shift_col].isna().sum():
                     print("some ids have random shift amounts but some are empty so filling these")
                     map[shift_col].fillna(shift_list,inplace=True)
+                    map[shift_col] = shift_list
+                    #save new column to file
+                    f.seek(0)
+                    map.to_csv(f,index=False)
             else:
                 print("the specified mapping file has ids but no random shift amounts so adding")
                 map[shift_col] = shift_list
-            #save new column to file
-            f.seek(0)
-            map.to_csv(f,index=False)
+                #save new column to file
+                f.seek(0)
+                map.to_csv(f,index=False)
 
         # find ids that need werent in map file 
         new_map = pd.Series(ids).rename(id_col).to_frame()
@@ -184,7 +188,7 @@ def shift_dates(df,id_col,date_cols, map_file,map_url=None,shift_amount=365):
         new_map = new_map.loc[new_map['_merge'] == 'left_only', [id_col]].\
                             reset_index(drop=True)
         # add random int of range specified to ids that need it
-        if new_map.shape[0]:
+        if not new_map.shape[0]:
             print('adding new random shift amounts')
             new_map[shift_col] = [_get_randint() for x in range(len(new_map))]
             new_map.sort_values(by=id_col, inplace=True)
