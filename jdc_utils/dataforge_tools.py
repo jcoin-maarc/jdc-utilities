@@ -181,14 +181,14 @@ def shift_dates(df,id_col,date_cols, map_file,map_url=None,shift_amount=365):
                 f.seek(0)
                 map.to_csv(f,index=False)
 
-        # find ids that need werent in map file 
+        # find ids that werent in map file 
         new_map = pd.Series(ids).rename(id_col).to_frame()
         new_map = new_map.merge(map[[id_col,shift_col]], how='left', on=id_col, indicator=True,
                                   validate='one_to_one')
         new_map = new_map.loc[new_map['_merge'] == 'left_only', [id_col]].\
                             reset_index(drop=True)
         # add random int of range specified to ids that need it
-        if not new_map.shape[0]:
+        if new_map.shape[0]:
             print('adding new random shift amounts')
             new_map[shift_col] = [_get_randint() for x in range(len(new_map))]
             new_map.sort_values(by=id_col, inplace=True)
@@ -214,9 +214,9 @@ def shift_dates(df,id_col,date_cols, map_file,map_url=None,shift_amount=365):
 
         return df
 
-#%%
+# #%%
 # df = pd.read_csv(r"C:\Users\kranz-michael\projects\jcoin-uky\tmp\replaced-ids\FOR UPLOAD_JCOINBaselineIntervi_DATA_LABELS_2022-04-05_1739.csv",
 # skiprows=lambda x:x==1)
-# #%%
-# df = shift_dates(df,'record_id','datetime_start','id_mapping.csv')
-# # %%
+# # #%%
+# df2 = shift_dates(df,'record_id','datetime_start','shift_mapping.csv')
+# # # %%
