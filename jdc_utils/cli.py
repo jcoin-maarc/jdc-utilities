@@ -11,6 +11,7 @@ import pandas as pd
 import glob 
 from pathlib import Path 
 import yaml
+import sys 
 
 # overall CLI
 @click.group()
@@ -186,7 +187,7 @@ def transform(transform_file, file_path):
 
 @click.command()
 @click.option(
-    "--schema-path", help="Frictionless table schema JSON or YAML file path"
+    "--schema-path", help="Frictionless table schema JSON or YAML file path",default=None
 )  # make this either a path or a option of baseline/followup
 @click.option(
     "--file-path",
@@ -202,11 +203,13 @@ def validate(schema_path, file_path,file_type):
 
     #get the directory of package and then add join with where the table schemas live
     schemas_dir = os.path.join(os.path.dirname(__file__), 'frictionless','table_schemas')
+    
     if file_type:
         with open(os.path.join(schemas_dir,'table_schema_urls.yaml')) as f: 
-            schema_path[file_type] = yaml.safe_load(f)
-    else:
-        click.fail(
+            schema_path = yaml.safe_load(f)[file_type]
+    
+    if not schema_path:
+        sys.exit(
             "Need to select the type of file(s) you are validating. For more info on options, run:\n"
             "jdc-utils validate --help"
         )

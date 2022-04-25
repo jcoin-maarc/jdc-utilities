@@ -22,7 +22,8 @@ from collections.abc import Iterable
 
 import glob
 
-from frictionless import Schema,Resource,validate_resource,validate_package
+from frictionless import Schema,Resource,Detector
+from frictionless import validate_resource,validate_package
 #submission validation utilities for frictionless schemas and packaging
 
 
