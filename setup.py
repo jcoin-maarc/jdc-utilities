@@ -11,7 +11,7 @@ setup(
     package_data={'jdc_utils': ['frictionless/table_schemas/table_schema_urls.yaml']},
     install_requires=[
         'pandas==1.4.1',
-        'pandas_flavor=0.2.0',
+        'pandas_flavor==0.2.0',
         'gitpython==3.1.27',
         'click==7.1.2',
         'openpyxl==3.0.9',
