@@ -89,7 +89,11 @@ def collapse_checkall(
     if columns_to_labels and not columns and not labels:
         columns = columns_to_labels.keys()
         labels = columns_to_labels.values()
+    
 
+    if df.columns.isin(columns).sum()<len(columns):
+        return None
+        
     bcols = df[columns]==checked
     var = bcols.idxmax(axis=1).where(bcols.sum(axis=1)==1, multi_checked).\
                             where(bcols.sum(axis=1)>0, none_checked)
@@ -137,12 +141,13 @@ def rename_and_change_values(df:pd.DataFrame,name_and_values:dict):
     """Rename vars and/or replace values"""
     for current_name,new_name_and_values in name_and_values.items():
         #added fillna as it could mean something different for each variable
-        if 'fillna' in new_name_and_values.keys():
-            df[current_name].fillna(new_name_and_values['fillna'],inplace=True)
-        if 'values' in new_name_and_values.keys():
-            df[current_name].replace(new_name_and_values['values'], inplace=True)
-        if 'name' in new_name_and_values.keys():
-            df.rename(columns={current_name: new_name_and_values['name']}, inplace=True)
+        if current_name in df.columns:
+            if 'fillna' in new_name_and_values.keys():
+                df[current_name].fillna(new_name_and_values['fillna'],inplace=True)
+            if 'values' in new_name_and_values.keys():
+                df[current_name].replace(new_name_and_values['values'], inplace=True)
+            if 'name' in new_name_and_values.keys():
+                df.rename(columns={current_name: new_name_and_values['name']}, inplace=True)
 
 @pf.register_dataframe_method
 def compute_days_btw_date_and_index(
