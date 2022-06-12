@@ -217,7 +217,7 @@ def validate(schema_path, file_path,file_type):
     resource = build_resource(schema_path, file_path)
     report = create_resource_validation_report(resource)
 
-    validated_dir = os.path.join("tmp","jdc", "validated")
+    validated_dir = os.path.join("tmp","jdc", "frictionless")
     os.makedirs(validated_dir, exist_ok=True)
 
     if report["is_valid"]:
