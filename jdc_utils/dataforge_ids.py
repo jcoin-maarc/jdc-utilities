@@ -133,7 +133,7 @@ class IDList:
         if not mode:
             mode = 'w'
         
-        f = open(filename, newline='')
+        f = open(filename,mode=mode, newline='')
         id_writer = csv.writer(f)
         if column_name:
             id_writer.writerow([column_name])
@@ -228,7 +228,6 @@ def replace_ids(df, id_file, map_file, map_url=None, level=0, column=None):
                                  right_index=True, validate='one_to_one')
         new_map.sort_values(by=old_name, inplace=True)
         # TODO Set delimiter to tab
-        # TODO See if I can get rid of extra lines on Windows
         new_map.to_csv(f, index=False, header=add_header)
         
         f.seek(0)
@@ -270,3 +269,10 @@ def generate_submitter_ids(num_ids=10000,filepath='submitter_ids.txt'):
     ids = IDList(ids=generate_ids(n=num_ids, offset=100000, prefix='J', check_digit=True, length=8))
     ids.ids = [id[:4] + '-' + id[4:] for id in ids.ids]
     ids.write_ids_to_file(filepath, column_name='submitter_id')
+
+
+
+filepath = 'friends_submitter_ids.txt'
+ids = IDList(ids=generate_ids(n=10000, offset=400000, prefix='J', check_digit=True, length=8))
+ids.ids = [id[:4] + '-' + id[4:] for id in ids.ids]
+ids.write_ids_to_file(filepath, column_name='submitter_id')
