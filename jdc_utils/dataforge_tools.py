@@ -153,39 +153,28 @@ def shift_dates(df,id_col,date_cols, map_file,map_url=None,shift_amount=365,keep
     for date_col in date_cols:
         assert date_col in df.columns or date_col in df.index.names
  
-    #open id to date shift amount mapping
-    #if no shift amount, then add
-    #save this to the map file
-    with versioned_file_resource(map_file, map_url, mode='a+') as f:      
+    #map/shift dates -- need two separate context managers as we are appending and/or adding columns to existing lines
+    with versioned_file_resource(map_file, map_url, mode='r') as f:      
         f.seek(0)
         try:
             map = pd.read_csv(f)
-            add_header = False
-        except pd.errors.EmptyDataError:
-            map = pd.DataFrame(columns = [id_col,shift_col])
-            add_header = True
-
-        #add random values if mapping file with ids exists
-        else:
             assert id_col in map.columns,'The specified id column was not found in mapping file'
             shift_list = pd.Series([_get_randint() for x in range(len(map))],index=map.index)
             if shift_col in map.columns:
-                if map[shift_col].isna().sum():
+                if map[shift_col].isna().sum()>0:
                     print("some ids have random shift amounts but some are empty so filling these")
                     map[shift_col].fillna(shift_list,inplace=True)
-                    #save new column to file
-                    f.seek(0)
-                    map.to_csv(f,index=False)
             else:
                 print("the specified mapping file has ids but no random shift amounts so adding a a column of random shift amounts")
                 map[shift_col] = shift_list
-                #save new column to file
-                f.seek(0)
-                map.to_csv(f,index=False)
+
+        except pd.errors.EmptyDataError:
+            map = pd.DataFrame(columns = [id_col,shift_col])
+
 
         # find ids that werent in map file by merging dataset ids with mapped ids
         new_map = pd.Series(ids).rename(id_col).to_frame()
-        new_map = new_map.merge(map[[id_col,shift_col]], how='left', on=id_col, indicator=True,
+        new_map = new_map.merge(map, how='left', on=id_col, indicator=True,
                                   validate='one_to_one')
         new_map = new_map.loc[new_map['_merge'] == 'left_only', [id_col]].\
                             reset_index(drop=True)
@@ -195,11 +184,15 @@ def shift_dates(df,id_col,date_cols, map_file,map_url=None,shift_amount=365,keep
             new_map[shift_col] = [_get_randint() for x in range(len(new_map))]
             new_map.sort_values(by=id_col, inplace=True)
 
-            #append new ids to mapping file (can do this because it is append mode)
-            new_map.to_csv(f, index=False, header=add_header)
-        
-        #go to top of file again, re-read in with newly appended shift amounts and shift dates
-        f.seek(0)
+            #append new map to the map df
+            map = pd.concat([map,new_map])
+
+    #save new mappings and date shift amounts to file -- write mode to save new columns and/or records
+    with versioned_file_resource(map_file, map_url, mode='w') as f:
+        map.to_csv(f,index=False)
+
+    #perform the shift date operations
+    with versioned_file_resource(map_file, map_url, mode='r') as f:    
         map = pd.read_csv(f)
         
         #df.reset_index(drop=False, inplace=True) #dont need to reset as merge fxn now searches index and columns
@@ -221,8 +214,9 @@ def shift_dates(df,id_col,date_cols, map_file,map_url=None,shift_amount=365,keep
         return df
 
 # #%%
-# df = pd.read_csv(r"C:\Users\kranz-michael\projects\jcoin-uky\tmp\replaced-ids\FOR UPLOAD_JCOINBaselineIntervi_DATA_LABELS_2022-04-05_1739.csv",
-# skiprows=lambda x:x==1)
+# mapping = r'C:\Users\kranz-michael\projects\rcg-bsd-gitlab\jcoin-maarc\jdc-utilities\tests\test-data\replace-id-tests\test-mappings.csv'
+# df = pd.read_csv(r'C:\Users\kranz-michael\projects\rcg-bsd-gitlab\jcoin-maarc\jdc-utilities\tests\test-data\replace-id-tests\test-1-long-format.csv')
 # # #%%
-# df2 = shift_dates(df,'record_id','datetime_start','shift_mapping.csv')
+# df2 = shift_dates(df,'record_id','date_var',mapping)
 # # # %%
+
