@@ -1,5 +1,5 @@
-record_id,test_var
-1,hello
-2,this
-3,is
-4,cool
+record_id,test_var,date_var
+1,hello,2022-02-02
+2,this,2022-02-02
+3,is,2022-02-02
+4,cool,2022-02-02
