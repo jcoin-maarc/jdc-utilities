@@ -56,9 +56,10 @@ def build_resource(schemapath,resourcepath):
     builds a resource from a schema and list of resources
     or string of a resource
     '''
-    detector = Detector(schema_sync=True)
+    #detector = Detector(schema_sync=True) #if column missing will still say its valid
     schema = Schema(schemapath)
-    resource = Resource(resourcepath,schema=schema,detector=detector)
+    #resource = Resource(resourcepath,schema=schema,detector=detector)
+    resource = Resource(resourcepath,schema=schema)
     return resource 
 
 def create_resource_validation_report(resource):
