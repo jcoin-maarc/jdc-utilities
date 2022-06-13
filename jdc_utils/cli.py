@@ -117,9 +117,10 @@ IN DEVELOPMENT: Additionally, this function accepts remote version control histo
 @click.option("--map-url", help='Git bare repo set up -- ie the "remote url" for sharing mapped ids (optional)', default=None)
 @click.option("--id-column", help="Name of column across files specified ids.", default=None)
 @click.option("--date-column", help="Name of date column(s) to be shifted", default=None,multiple=True)
+@click.option("--keep-inputs", help="This flag allows users to keep inputs. That is, both the original non-shifted date columns and the amount shifted by.",is_flag=True)
 @click.option("--config-file", help="A configuration file containing all required shift date fields", default=None)
 
-def shift_dates(file_paths,map_file,map_url,id_column,date_column,config_file):
+def shift_dates(file_paths,map_file,map_url,id_column,date_column,keep_inputs,config_file):
     shifted_dates_dir = os.path.join("tmp", "jdc",'shifted_dates')
     os.makedirs(shifted_dates_dir, exist_ok=True)
 
@@ -145,7 +146,8 @@ def shift_dates(file_paths,map_file,map_url,id_column,date_column,config_file):
                      map_file=map_file,
                       map_url=map_url, 
                       id_col=id_column,
-                      date_cols=date_column
+                      date_cols=date_column,
+                      keep_inputs=keep_inputs
                 )
 
             file_name = Path(file_path_glob).stem

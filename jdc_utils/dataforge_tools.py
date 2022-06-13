@@ -96,7 +96,7 @@ def versioned_file_resource(map_file, remote_url=None, repo_path=None, mode='r',
                 repo.head.reset('HEAD~1', index=True, working_tree=True)
                 raise e
 
-def shift_dates(df,id_col,date_cols, map_file,map_url=None,shift_amount=365):
+def shift_dates(df,id_col,date_cols, map_file,map_url=None,shift_amount=365,keep_inputs=False):
 
     """Shift dates in a DataFrame by a random number of specified days 
     from a randomly determined uniform distribution and range
@@ -130,6 +130,8 @@ def shift_dates(df,id_col,date_cols, map_file,map_url=None,shift_amount=365):
     shift_amount: the number of days to shift your date by
     level: if in index, this indicates which level ids are located (default is first level (0))
     column: name of column or index where ids are stored for dataframe
+    keep_inputs: keep the amount shifted and the original input dates. This is False by default but 
+        can be set to True for debugging/understanding how this function works.
 
     """   
     def _get_randint():
@@ -162,56 +164,60 @@ def shift_dates(df,id_col,date_cols, map_file,map_url=None,shift_amount=365):
         except pd.errors.EmptyDataError:
             map = pd.DataFrame(columns = [id_col,shift_col])
             add_header = True
+
         #add random values if mapping file with ids exists
         else:
-            assert id_col in map.columns,'The specified id was not found in mapping file'
+            assert id_col in map.columns,'The specified id column was not found in mapping file'
             shift_list = pd.Series([_get_randint() for x in range(len(map))],index=map.index)
             if shift_col in map.columns:
                 if map[shift_col].isna().sum():
                     print("some ids have random shift amounts but some are empty so filling these")
                     map[shift_col].fillna(shift_list,inplace=True)
-                    map[shift_col] = shift_list
                     #save new column to file
                     f.seek(0)
                     map.to_csv(f,index=False)
             else:
-                print("the specified mapping file has ids but no random shift amounts so adding")
+                print("the specified mapping file has ids but no random shift amounts so adding a a column of random shift amounts")
                 map[shift_col] = shift_list
                 #save new column to file
                 f.seek(0)
                 map.to_csv(f,index=False)
 
-        # find ids that werent in map file 
+        # find ids that werent in map file by merging dataset ids with mapped ids
         new_map = pd.Series(ids).rename(id_col).to_frame()
         new_map = new_map.merge(map[[id_col,shift_col]], how='left', on=id_col, indicator=True,
                                   validate='one_to_one')
         new_map = new_map.loc[new_map['_merge'] == 'left_only', [id_col]].\
                             reset_index(drop=True)
         # add random int of range specified to ids that need it
-        if new_map.shape[0]:
+        if len(new_map)>0:
             print('adding new random shift amounts')
             new_map[shift_col] = [_get_randint() for x in range(len(new_map))]
             new_map.sort_values(by=id_col, inplace=True)
-            # TODO: Set delimiter to tab
-            #append new ids to mapping file
+
+            #append new ids to mapping file (can do this because it is append mode)
             new_map.to_csv(f, index=False, header=add_header)
         
-        #reopen file and shift dates
+        #go to top of file again, re-read in with newly appended shift amounts and shift dates
         f.seek(0)
         map = pd.read_csv(f)
         
-        df.reset_index(drop=False, inplace=True)
+        #df.reset_index(drop=False, inplace=True) #dont need to reset as merge fxn now searches index and columns
         df = df.merge(map[[id_col,shift_col]], how='left', on=id_col)
 
 
         #shift dates by specified number of days
         delta = df[shift_col].apply(lambda x: pd.Timedelta(days=x))
+        if not keep_inputs:
+            del df[shift_col]
+
+        #shift dates
         for date_col in date_cols:
             dt = pd.to_datetime(df[date_col])
             df['shifted_' + date_col] = (dt + delta).dt.strftime('%Y%m%d')
 
-        #TODO: optional to drop nonshifted dates
-
+            if not keep_inputs:
+                del df[date_col]
         return df
 
 # #%%
