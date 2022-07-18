@@ -1,0 +1,16 @@
+#transform steps
+to_quarter:
+  from_date_name_to_quarter_name:
+    date_var: quarter_enrolled
+
+# de-identification steps
+replace_ids:
+  id_file: tests/data/transform-tests/test_submitter_ids-header.txt
+  map_file: tests/data/transform-tests/test_mappings.csv
+  #map_url:
+  id_column: record_id
+shift_dates:
+  date_columns: date_var
+  map_file: tests/data/transform-tests/test_mappings.csv
+  #map_url:
+  id_column: record_id
