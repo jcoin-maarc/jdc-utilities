@@ -152,23 +152,29 @@ def shift_dates(df,id_col,date_cols, map_file,map_url=None,shift_amount=365,keep
     #check to make sure date columns are in the df
     for date_col in date_cols:
         assert date_col in df.columns or date_col in df.index.names
- 
+    mappings_exist = os.path.exists(map_file)
+    if not mappings_exist:
+        mode = 'w'
+    else:
+        mode = 'r'
     #map/shift dates -- need two separate context managers as we are appending and/or adding columns to existing lines
-    with versioned_file_resource(map_file, map_url, mode='r') as f:      
-        f.seek(0)
-        try:
-            map = pd.read_csv(f)
-            assert id_col in map.columns,'The specified id column was not found in mapping file'
-            shift_list = pd.Series([_get_randint() for x in range(len(map))],index=map.index)
-            if shift_col in map.columns:
-                if map[shift_col].isna().sum()>0:
-                    print("some ids have random shift amounts but some are empty so filling these")
-                    map[shift_col].fillna(shift_list,inplace=True)
-            else:
-                print("the specified mapping file has ids but no random shift amounts so adding a a column of random shift amounts")
-                map[shift_col] = shift_list
-
-        except pd.errors.EmptyDataError:
+    with versioned_file_resource(map_file, map_url, mode=mode) as f:
+        if mappings_exist:      
+            f.seek(0)
+            try:
+                map = pd.read_csv(f)
+                assert id_col in map.columns,'The specified id column was not found in mapping file'
+                shift_list = pd.Series([_get_randint() for x in range(len(map))],index=map.index)
+                if shift_col in map.columns:
+                    if map[shift_col].isna().sum()>0:
+                        print("some ids have random shift amounts but some are empty so filling these")
+                        map[shift_col].fillna(shift_list,inplace=True)
+                else:
+                    print("the specified mapping file has ids but no random shift amounts so adding a a column of random shift amounts")
+                    map[shift_col] = shift_list
+            except pd.errors.EmptyDataError:
+                map = pd.DataFrame(columns = [id_col,shift_col])
+        else:
             map = pd.DataFrame(columns = [id_col,shift_col])
 
 
