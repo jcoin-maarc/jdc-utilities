@@ -167,24 +167,40 @@ def shift_dates(file_paths,map_file,map_url,id_column,date_column,keep_inputs,co
     ''' 
 )
 @click.option("--transform-file", help="Path to the given transform file")
-@click.option("--file-path", help="Path to the given dataset file")
-def transform(transform_file, file_path):
+@click.option(
+    "--file-path",
+    "file_paths",
+    help="Path to the given dataset file. Can specify multiple files if same transform file used across multiple data files.",
+    multiple=True,
+    required=True,
+)
+def transform(transform_file, file_paths):
 
     # read in and run transforms -- right now currently using pandas -- may want to migrate to petl
     # for consistency with validation as it uses petl to read in and type conversions may be different.
     # alternatively, we could use the pandas plugin for frictionless but it is experimental.
-    df = read_df(file_path)
-    run_transformfile(df, transform_file)
+    #click.echo("STARTING")
+    for file_path in file_paths:
+        #glob.glob allows support for both wildcards (*) and actual file paths
+        file_path_with_glob_regexs = glob.glob(file_path) #if not a regex, will just return the filepath within list
+        
+        print(f"Applying {transform_file} to:")
+        print(','.join(file_path_with_glob_regexs))
 
-    # make transform dir
-    transform_dir = os.path.join("tmp","jdc","transformed")
-    os.makedirs(transform_dir, exist_ok=True)
+        for file_path_glob in file_path_with_glob_regexs:
+            pass
+            df = read_df(file_path_glob)
+            run_transformfile(df, transform_file)
 
-    # save file
-    file_name = os.path.split(file_path)[-1]
-    file_path_to_save = os.path.join(transform_dir, file_name)
-    df.to_csv(file_path_to_save)
-    click.echo(f"Transformed file saved to {file_path_to_save}")
+            # make transform dir
+            transform_dir = os.path.join("tmp","jdc","transformed")
+            os.makedirs(transform_dir, exist_ok=True)
+
+            # save file
+            file_name = os.path.split(file_path_glob)[-1]
+            file_path_to_save = os.path.join(transform_dir, file_name)
+            df.to_csv(file_path_to_save)
+            click.echo(f"Transformed file saved to {file_path_to_save}")
 
 
 @click.command()
