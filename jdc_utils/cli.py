@@ -188,9 +188,8 @@ def transform(transform_file, file_paths):
         print(','.join(file_path_with_glob_regexs))
 
         for file_path_glob in file_path_with_glob_regexs:
-            pass
             df = read_df(file_path_glob)
-            run_transformfile(df, transform_file)
+            df = run_transformfile(df, transform_file)
 
             # make transform dir
             transform_dir = os.path.join("tmp","jdc","transformed")
@@ -199,7 +198,7 @@ def transform(transform_file, file_paths):
             # save file
             file_name = os.path.split(file_path_glob)[-1]
             file_path_to_save = os.path.join(transform_dir, file_name)
-            df.to_csv(file_path_to_save)
+            df.to_csv(file_path_to_save,index=False)
             click.echo(f"Transformed file saved to {file_path_to_save}")
 
 

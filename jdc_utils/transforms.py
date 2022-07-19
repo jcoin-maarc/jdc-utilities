@@ -56,7 +56,14 @@ def run_transformfile(df, transformfile):
     transform_mappings = OrderedDict(read_transformfile(transformfile))
 
     for fxn_name, params in transform_mappings.items():
-        getattr(df, fxn_name)(**params)
+        if fxn_name in ['replace_ids','shift_dates']:
+            print(fxn_name)
+            df = getattr(df, fxn_name)(**params)
+            print(df.columns)
+        else:
+            getattr(df, fxn_name)(**params)
+    
+    return df 
 
 
 # Note: alternative to using pandas-flavor is making a child class of pd.DataFrame
@@ -227,7 +234,8 @@ def compute_days_btw_date_and_index(
 
 @pf.register_dataframe_method
 def replace_ids(df, id_file, map_file, map_url=None, id_column=None):
-    df.update(ids.replace_ids(df, id_file, map_file, map_url=None, column=id_column))
+    df_new = ids.replace_ids(df, id_file, map_file, map_url=None, column=id_column)
+    return df_new
 
 
 @pf.register_dataframe_method
@@ -250,11 +258,4 @@ def shift_dates(
         keep_inputs=keep_inputs,
     )
     
-    shifted_date_cols = (
-        [date_columns] 
-            if isinstance(date_columns, str) 
-            else date_columns
-    )
-    
-    for d in shifted_date_cols:
-        df[f"shifted_{d}"] = df_new[f"shifted_{d}"].copy()
+    return df_new
