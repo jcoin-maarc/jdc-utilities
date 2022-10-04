@@ -214,7 +214,8 @@ class Node:
             column_args['checks'].append(enum_check)
             
         column_args['required'] = self.check_is_required(prop_name)
-        column_args['allow_duplicates'] = self.check_require_unique(prop_name)
+        #column_args['allow_duplicates'] = self.check_require_unique(prop_name)
+        column_args['unique'] = self.check_require_unique(prop_name)
 
         if self.index_name==prop_name:
             del column_args['required'] #Index does not have this argument
