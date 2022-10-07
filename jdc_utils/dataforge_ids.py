@@ -269,10 +269,3 @@ def generate_submitter_ids(num_ids=10000,filepath='submitter_ids.txt'):
     ids = IDList(ids=generate_ids(n=num_ids, offset=100000, prefix='J', check_digit=True, length=8))
     ids.ids = [id[:4] + '-' + id[4:] for id in ids.ids]
     ids.write_ids_to_file(filepath, column_name='submitter_id')
-
-
-
-filepath = 'friends_submitter_ids.txt'
-ids = IDList(ids=generate_ids(n=10000, offset=400000, prefix='J', check_digit=True, length=8))
-ids.ids = [id[:4] + '-' + id[4:] for id in ids.ids]
-ids.write_ids_to_file(filepath, column_name='submitter_id')
