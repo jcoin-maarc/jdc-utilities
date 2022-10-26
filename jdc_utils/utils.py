@@ -7,7 +7,7 @@ import sys
 from collections import OrderedDict
 from numpy.random import RandomState
 import shutil
-
+import random
 
 
 #general utilities
@@ -173,8 +173,11 @@ def create_marginal_sample(marginals:pd.DataFrame,column_name:str='column',categ
     for col,marginal in marginals.iteritems():
         for category,total in marginal.iteritems():
             if pd.notna(total):
-                sample.extend(int(total)*[{column_name:col,category_name:category}])
-    random.shuffle(sample)
+                #shuffle within each group (ie col or column -- ie type of participant)
+                col_sample = int(total)*[{column_name:col,category_name:category}]
+                random.shuffle(col_sample)
+                sample.extend(col_sample)
+    
     return pd.DataFrame(sample)
 
 def _create_sample(xls_path,sheet_name):
