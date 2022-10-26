@@ -140,14 +140,18 @@ def split_marginals_and_total(df:pd.DataFrame) -> pd.DataFrame:
             f'For {sheet_name}:\n'
             'the sum of marginals exceed the reported total number\n'
         )
-        print('{sheet_name}')
         exit = True 
 
     if exit:
-        sys.exit('Correct errors and try again')
+        sys.exit(mess)
 
     # add not reported (happens if cell size restrictions)
-    marginals.loc['Not reported',:] = totals_diff.values
+    
+    try:
+        not_reported = marginals.loc['Not reported',:]
+        not_reported+=totals_diff.values.flatten()
+    except KeyError:
+        marginals.loc['Not reported',:] = totals_diff.values.flatten()
 
     return marginals
 
