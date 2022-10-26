@@ -182,7 +182,7 @@ def create_marginal_sample(marginals:pd.DataFrame,column_name:str='column',categ
 
 def _create_sample(xls_path,sheet_name):
     sample_df = (
-        pd.read_excel(DATA_PATH,sheet_name=sheet_name)
+        pd.read_excel(xls_path,sheet_name=sheet_name)
         .pipe(
             lambda df: df.set_index(df.columns[0])
         )
@@ -199,12 +199,11 @@ def _create_sample(xls_path,sheet_name):
     )
     return sample_df
 def create_gen3_submission(xls_path:str,category_name_mappings:dict) -> pd.DataFrame:
-    df = pd.DataFrame([],index=[None,'category'])
-    df = pd.concat([
-    _create_sample(DATA_PATH, sheet_name)\
+    dfs = [
+    _create_sample(xls_path, sheet_name)\
         .rename(columns={'category':gen3_name})\
-    for sheet_name,gen3_name in category_name_mappings.items()],
-    axis=1)
-    return df
+    for sheet_name,gen3_name in category_name_mappings.items()]
+    
+    return pd.concat(dfs,axis=1)
 
     
