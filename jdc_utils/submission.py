@@ -132,11 +132,11 @@ class Node:
         '''
 
         if prop_name=='submitter_id':
-            allow_duplicates = False
+            is_unique = True
         else:
-            allow_duplicates = True 
+            is_unique = False 
 
-        return allow_duplicates
+        return is_unique
 
     def check_is_required(self,prop_name:str):
         '''
@@ -191,6 +191,8 @@ class Node:
                 dtype = int
             else: #TODO: add other possibilities? raise error as in current validate fxn?
                 dtype = object
+        elif 'oneOf' in prop_vals:
+                dtype = object #NOTE: short-term solution
         else:
             raise Exception("No type in property...something is wrong with yaml file")
         return dtype
