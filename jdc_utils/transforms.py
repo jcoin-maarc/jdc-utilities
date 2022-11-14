@@ -259,3 +259,12 @@ def shift_dates(
     )
     
     return df_new
+
+def to_lowercase_names(df):
+    """convert column names to lower case
+
+    """
+    df = df.copy()
+    df.columns = [c.lower() for c in df.columns]
+    return df
+
