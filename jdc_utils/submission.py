@@ -24,66 +24,6 @@ import glob
 
 from frictionless import Schema,Resource,Detector
 from frictionless import validate_resource,validate_package
-#submission validation utilities for frictionless schemas and packaging
-
-
-#can validate a package or resource -- starting with resource for hubs  to keep simple
-# that is, if their file conforms to schema, then they can submit to box for packaging.
-def build_package(resourcepaths):
-    ''' 
-    builds a package from tuple of resources in form 
-    of (schema,resources)
-    '''
-    package = Package()
-    #resource = Resource(resourcepath,schema=schema,detector=detector)
-    for schemapath,datapath in resourcepaths:
-        #detector = Detector(schema_sync=True) #Phil recommended to not use schema sync but rather get cols manually
-        schema = Schema(schemapath)
-        resource = Resource(datapath,schema=schema)
-        package.add_resource(resource)
-
-    #return messages
-    return package
-
-def create_package_validation_report(package):
-    report = validate_package(package)
-    messages = [v['message'] for v in report['errors']]
-    return messages
-
-
-def build_resource(schemapath,resourcepath):
-    ''' 
-    builds a resource from a schema and list of resources
-    or string of a resource
-    '''
-    #detector = Detector(schema_sync=True) #if column missing will still say its valid
-    schema = Schema(schemapath)
-    #resource = Resource(resourcepath,schema=schema,detector=detector)
-    resource = Resource(resourcepath,schema=schema)
-    return resource 
-
-def create_resource_validation_report(resource):
-    report = validate_resource(resource)
-    file_path_exp = parse("$..resource.path[*]")
-    file_paths = [x.value for x in file_path_exp.find(report)]
-
-    file_names = " and ".join([os.path.split(f)[-1] for f in file_paths])
-    #errors = [task['errors'][0] for task in report['tasks'] if not report['valid']]
-    errors_df = pd.DataFrame(
-                report.flatten(["code", "rowPosition", "message", "description"]),
-                columns=[
-                    "error-category",
-                    "row-number",
-                    "error-message",
-                    "general-error-description",
-                ],
-            )
-    return {'file_names':file_names,'errors_df':errors_df,"is_valid":report['valid']}
-
-
-
-
-
 
 
 # submission validation utilities for gen3 sheepdog validation 
