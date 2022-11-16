@@ -8,6 +8,8 @@ from collections import OrderedDict
 from numpy.random import RandomState
 import shutil
 import random
+from pathlib import Path
+from zipfile import ZipFile
 
 
 #general utilities
@@ -210,4 +212,41 @@ def create_gen3_submission(xls_path:str,category_name_mappings:dict) -> pd.DataF
     
     return pd.concat(dfs,axis=1)
 
+
+
+def _write_to_zip(indir_path,zipobj):
+    '''
+    recursively writes file contents
+    of a directory
+    to a zip object (in write mode)
+
+    TODO: write directories (so can write empty dirs) without using mkdir
+    '''       
+    indir_path = Path(indir_path).resolve()
+    indir_contents = indir_path.glob("*")
     
+    for d in indir_contents:
+        #relative directory to write dir/file within zip
+        relative_path = d.relative_to(indir_path)
+        if d.is_file():
+            zipobj.write(d,relative_path)
+        else:
+            #zipobj.mkdir(relative_dir) #ZipFile.mkdir only supported starting in python 3.11
+            _write_to_zip(d,zipobj)
+
+def zip_package(pkg_path,zip_path):
+    ''' 
+    takes a valid package and outputs 
+    to a zipped file.
+
+    package-name --> package-name.zip
+    '''
+    assert Path(pkg_path).is_dir()
+    assert Path(zip_path).is_dir()
+
+    pkg_path = Path(pkg_path).resolve()
+    outzip_path = (Path(zip_path).resolve()/
+        pkg_path.with_suffix('.zip').name)
+
+    with ZipFile(outzip_path,'w') as pkgzip:
+        _write_to_zip(pkg_path,pkgzip)
