@@ -1,0 +1,3 @@
+[submodule "jcoin_hubs/chestnut"]
+	path = jcoin_hubs/chestnut
+	url = ssh://git@rcg-git.uchicago.edu:443/maarc/dasc/hubs/chestnut.git
