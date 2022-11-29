@@ -22,7 +22,8 @@ setup(
         'requests>=2.27.1',
         'frictionless>=4.26.0',
         'gen3>=4.4.0',
-        'pyreadstat>=1.1.7'
+        'pyreadstat>=1.1.7',
+        'dataforge @ git+https://gitlab.com/phs-rcg/data-forge.git'
     ],
     entry_points='''
         [console_scripts]
