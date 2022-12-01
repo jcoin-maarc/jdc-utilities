@@ -1,7 +1,8 @@
 """Easy access to latest versions of JCOIN schema"""
 
 from frictionless import Schema
-from typing import Dict 
+from typing import Dict
+from types import SimpleNamespace
 def get_dict(dictionary):
     ''' 
     flexible helper function 
@@ -14,7 +15,7 @@ def get_dict(dictionary):
 
 branch = 'master'
 core_measures = SimpleNamespace(
-    reserve = get_dict(f'https://raw.githubusercontent.com/jcoin-maarc/JCOIN-Core-Measures/{branch}/encodings/encodings.yaml'),
-    fields = get_dict(f'https://raw.githubusercontent.com/jcoin-maarc/JCOIN-Core-Measures/{branch}/encodings/reserve_codes.yaml')
+    fields = get_dict(f'https://raw.githubusercontent.com/jcoin-maarc/JCOIN-Core-Measures/{branch}/encodings/encodings.yaml'),
+    reserve = get_dict(f'https://raw.githubusercontent.com/jcoin-maarc/JCOIN-Core-Measures/{branch}/encodings/reserve_codes.yaml')
 )
 
