@@ -9,7 +9,6 @@ setup(
     description='Utilities for preparing and submitting data to the JDC',
     url='https://rcg.bsd.uchicago.edu/gitlab/maarc/dasc/jdc-utilities',
     packages=find_namespace_packages(where='.'),
-    package_data={'jdc_utils': ['frictionless/table_schemas/table_schema_urls.yaml']},
     install_requires=requirements,
     entry_points='''
         [console_scripts]
