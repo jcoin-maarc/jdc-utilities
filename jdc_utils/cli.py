@@ -1,7 +1,7 @@
 """CLI for JDC utilities"""
 
 import click
-from jdc_utils.submission import build_resource, create_resource_validation_report
+from jdc_utils.submission import CoreMeasures
 from jdc_utils.transforms import read_df, run_transformfile
 import jdc_utils.dataforge_ids as ids
 import jdc_utils.dataforge_tools as tools
@@ -204,62 +204,34 @@ def transform(transform_file, file_paths):
 
 @click.command()
 @click.option(
-    "--schema-path", help="Frictionless table schema JSON or YAML file path",default=None
-)  # make this either a path or a option of baseline/followup
-@click.option(
-    "--file-path",
-    help="Path to dataset file(s)",
-    multiple=True,
+    "--filepath",
+    help="Path to directory where dataset file(s) live",
 )
 @click.option(
-    "--file-type",
-    type=click.Choice(['baseline', 'time-points']),
-    help="Type of file(s). Currently either baseline or time-points"
+    "--outdir",
+    help="Path to directory where dataset file(s) live",
 )
-def validate(schema_path, file_path,file_type):
+def validate(filepath,outdir='.'):
+    os.chdir(filepath)
+    core_measures = CoreMeasures('.')
+    core_measures.validate(write_to_file=True)
 
-    #get the directory of package and then add join with where the table schemas live
-    schemas_dir = os.path.join(os.path.dirname(__file__), 'frictionless','table_schemas')
-    
-    if file_type:
-        with open(os.path.join(schemas_dir,'table_schema_urls.yaml')) as f: 
-            schema_path = yaml.safe_load(f)[file_type]
-    
-    if not schema_path:
-        sys.exit(
-            "Need to select the type of file(s) you are validating. For more info on options, run:\n"
-            "jdc-utils validate --help"
-        )
-    file_path = [f for f in file_path if f]  # get rid of ""
-    resource = build_resource(schema_path, file_path)
-    report = create_resource_validation_report(resource)
-
-    validated_dir = os.path.join("tmp","jdc", "frictionless")
-    os.makedirs(validated_dir, exist_ok=True)
-
-    if report["is_valid"]:
+    if core_measures.report["valid"]:
         click.echo(
-            f"Congrats! Your file(s) -- {report['file_names']} ---  passed validation!\n"
-            f"Now saving to {validated_dir}"
+            f"Congrats! Your file(s) -- {','.join(core_measures.resource_names)} ---  passed validation!\n"
         )
         click.echo("If you're happy with them, you can proceed with submission.")
-        # save to file
-        for f in file_path:
-            validated_file_path = os.path.join(validated_dir, os.path.split(f)[-1])
-            copy_file(f, validated_file_path)
     else:
         click.echo(
             "\n\n"
-            f"{report['file_names']}: invalid.\n"
+            f"One or more of the core measure files need some corrections.\n"
             f"Take a look below at the error report table below to correct.\n"
-            f"We'll also save your errors to the {validated_dir}\errors.tsv file\n"
+            f"We also wrote several useful files derived from the validation report to help in\n"
+            "the curation process with the suffix 'report':\n"
             "----------------------------------------------------------------------\n"
             "----------------------------------------------------------------------\n"
         )
-        report['errors_df'].replace('"','',inplace=True)
-        click.echo(report['errors_df'][['error-category','error-message',]].to_string(index=False))
-        # append error.tsv
-        report['errors_df'].to_csv(os.path.join(validated_dir,"errors.tsv"),sep="\t")
+        click.echo(core_measures.report.to_summary())
 
 cli.add_command(replace_ids, name="replace-ids")
 cli.add_command(shift_dates, name="shift-dates")
