@@ -6,15 +6,13 @@ import os
 from pathlib import Path
 from jdc_utils import schema
 from frictionless import Package,Resource
-from frictionless import validate
+from frictionless import transform,validate
 from collections import abc
 from dataforge.frictionless import add_missing_fields,write_package_report
 
 
 
 schemas = schema.core_measures.__dict__
-
-
 
 class CoreMeasures:
     """ 
@@ -31,51 +29,39 @@ class CoreMeasures:
         - path to a glob-like regular expression for multiple data files
         - can also be a package descriptor file (eg data-package.json) with resources
         (technically can also be a Package object in addition to a file path)
-    Returns
-    --------------
-    package with schema added and added missing values (in resource metadata and actual table)
     """ 
 
-    def __init__(self,filepath,schemas=None):
-        #get package
-        #validate
-        #write if valid
+    def __init__(self,filepath):
         self.filepath = filepath
-        self.package = transform(Package(filepath),steps=[add_missing_fields('Missing')])
-        for resource in self.package['resources']:
-            if not resource.get('name'):
-                _add_name_from_path(resource)
+        
+        source = Package(filepath)
+        target = Package()
 
-            if not resource.get('schema'):
-                _add_schema(resource)
-
-
-    @staticmethod
-    def _add_name_from_path(resource:Resource):
-            #NOTE: the dash and underscores are moved
-            #to support various versions of names used
-            # such as time-points,time_points,and timepoints
-            resource['name'] = name = (
-                Path(resource['path']).stem
-                .lower()
+        for resource in source.resources:
+            name = (
+                resource.name.lower()
                 .replace("-","")
                 .replace("_","")
             )
-
-    @staticmethod
-    def _add_schema(resource:Resource):
-        assert_msg = f"{resource['name']} must match one of {','.join(list(schemas))}"
-        assert resource['name'] in list(schemas),assert_msg
-        resource['schema'] = schemas[name]
-
-    def validate(self,outdir='',):
-        self.report = write_package_report(
-            self.package,outdir
-        )
+            if name in list(schemas):
+                resource['schema'] = schemas[name]
+                target.add_resource(resource)
+    
+        self.package = transform(target,steps=[add_missing_fields(missing_value='Missing')])
         
+        
+    
+    def validate(self,outdir='',write_to_file=False):
+        self.report = validate(self.package)
+        
+        return write_package_report(
+            self.package,outdir,write_to_file
+        )
+
     def write(self,outdir=''):
-        self.written_package = self.package.copy()
-        del self.written_package['resources']
+        #TODO: provide input for other study level info like 
+        # description etc
+        self.written_package = Package()
 
         for resource in self.package['resources']:
             csvpath = f"{outdir}/data/{resource['name']}.csv"
