@@ -6,4 +6,4 @@ pyyaml>=5.4.1
 pandera>=0.9.0
 jsonpath_ng>=1.5.3
 gen3>=4.4.0
-git+ssh://git@gitlab.com/mbkranz/data-forge.git@76ba211b5ca60fffb385c593f6853177014ec791#egg=dataforge
+dataforge @ git+http://git@gitlab.com/mbkranz/data-forge.git
