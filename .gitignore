@@ -6,3 +6,5 @@ examples/old/
 tmp/
 venv/
 NOTES.md
+
+*credentials.json
