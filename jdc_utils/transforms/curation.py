@@ -1,13 +1,9 @@
 import pandas as pd
-import openpyxl
-import xlrd
-import yaml
+
 import re
 from collections import OrderedDict
 import pandas_flavor as pf
 from pathlib import Path
-import jdc_utils.dataforge_tools as tools 
-import jdc_utils.dataforge_ids as ids 
 
 
 # Note: alternative to using pandas-flavor is making a child class of pd.DataFrame
@@ -118,92 +114,6 @@ def rename_and_change_values(df: pd.DataFrame, name_and_values: dict):
 
 
 @pf.register_dataframe_method
-def compute_days_btw_date_and_index(
-    df: pd.DataFrame,
-    index_date_col: str,
-    index_date_type: str,
-    date_to_days_names: dict,
-    id_col: str = None,
-    file_with_index: str = None,
-    is_drop_dates: bool = True,
-    inplace: bool = True,
-):
-    """
-    creates new columns with days between a set of dates and an index date
-
-    :param df: input dataframe that contains the dates to calculate against index date
-    :param index_date_col: name of the index date column (either in the input dataframe or another dataframe)
-    :param date_to_days_name: a dictionary consisting of the name of computed days between (key) and name of the date column in input dataset (value)
-    :param file_with_index: the file path containing the dateframe of the index date
-
-    TODO: Per Phil's request: randomize all dates by a factor and store this factor in id_mappings
-    TODO: this function can generalize to other units pretty easily
-    TODO: add params to merge on left and right as separate names
-        (in this workflow it doesnt matter as same name for all ids is guaranteed by replace id fxn)
-    """
-    # index and dates both in input dataframe
-    if not file_with_index:
-        date_cols = list(date_to_days_names.values())
-        date_and_index_df = df[[index_date_col] + date_cols].rename(
-            columns={index_date_col: "index_date"}
-        )
-    # index in different dataframe
-    else:
-        # in addition to required index_date_col and df:
-        assert (
-            file_with_index
-        ), "Need to specify file name if index date not in dataframe"
-        assert id_col, "Need to specify an id_col to ensure proper merging"
-        index_df = read_df(file_with_index)[[index_date_col, id_col]].rename(
-            columns={index_date_col: "index_date"}
-        )
-        date_and_index_df = df.merge(
-            index_df, on=id_col, how="left", validate="many_to_one"
-        )
-
-    # now calculate the merged series and add to input df
-    index_date = pd.to_datetime(date_and_index_df["index_date"])
-    for days_name, date_name in date_to_days_names.items():
-        date = pd.to_datetime(date_and_index_df[date_name])
-        df[days_name] = (date - index_date).dt.days
-
-    df["index_date_type"] = index_date_type
-
-    # other possible params specified
-    if is_drop_dates:
-        df.drop(columns=list(date_to_days_names.values()))
-    if not inplace:
-        return df
-
-
-@pf.register_dataframe_method
-def replace_ids(df, id_file, map_file, map_url=None, id_column=None):
-    df_new = ids.replace_ids(df, id_file, map_file, map_url=None, column=id_column)
-    return df_new
-
-
-@pf.register_dataframe_method
-def shift_dates(
-        df,
-        id_column,
-        date_columns,
-        map_file,
-        map_url=None,
-        shift_amount=365,
-        keep_inputs=False,
-):
-    df_new = tools.shift_dates(
-        df,
-        date_cols=date_columns,
-        map_file=map_file,
-        id_col=id_column,
-        map_url=map_url,
-        shift_amount=shift_amount,
-        keep_inputs=keep_inputs,
-    )
-    
-    return df_new
-
 def to_lowercase_names(df):
     """convert column names to lower case
 

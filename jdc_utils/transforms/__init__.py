@@ -1,5 +1,4 @@
-from transforms.io import *
-from trnasforms.methods import *
+
 
 def read_transformfile(transformfile):
     with open(transformfile) as file:
