@@ -1,0 +1,10 @@
+name: jdc-utilities
+channels: 
+  - conda-forge
+dependencies:
+  - python=3.10
+  - jupyter
+  - black
+  - pip
+  - pip:
+    - -e .
