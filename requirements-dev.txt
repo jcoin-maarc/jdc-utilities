@@ -1,4 +1,0 @@
--e .
--e git+ssh://git@gitlab.com/mbkranz/data-forge.git@76ba211b5ca60fffb385c593f6853177014ec791#egg=dataforge
-black
-jupyter
