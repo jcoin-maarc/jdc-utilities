@@ -4,10 +4,26 @@ import re
 from collections import OrderedDict
 import pandas_flavor as pf
 from pathlib import Path
+import git
 from dataforge import tools,ids 
 
+
+versioned_filenames = {
+    'shift_dates':'days_for_shift_date.csv',
+    'replace_ids':'jdc_person_id.csv'
+}
+
+def _get_versioned_history_path(fxnname,history_path):
+    versioned_filename = Path(versioned_filenames[fxnname])
+    file_history_path = (
+        Path(history_path)
+        .joinpath(versioned_filename)
+        .with_suffix(".git")
+    )
+    return file_history_path
+
 @pf.register_dataframe_method
-def replace_ids(df, id_file, id_column,id_history_path):
+def replace_ids(df, id_file, id_column,history_path):
     """ 
     (pulls in the most up-to-date mappings stored in id_history_path).
     The id_history_path pulls in the most up to date id mappings. It is stored
@@ -30,13 +46,16 @@ def replace_ids(df, id_file, id_column,id_history_path):
 
     
     """
+    id_history_path = _get_versioned_history_path('replace_ids',history_path)
+    id_map_file = versioned_filenames['replace_ids']
 
     df_new = ids.replace_ids(
         df=df, 
         id_file=id_file,
-        map_file='ids.csv',
+        map_file=id_map_file,
         column=id_column,
-        map_url=id_history_path)
+        map_url=str(id_history_path)
+    )
 
     return df_new
 
@@ -47,20 +66,20 @@ def shift_dates(
         df,
         id_column,
         date_columns,
-        shift_days_history_path,
-        shift_days_col='days_for_shift_date'
-):
+        history_path):
     """ 
     
     """
 
     ids = df[id_column]
+    offsets_history_path = _get_versioned_history_path('replace_ids',history_path)
+    offsets_map_file = versioned_filenames['replace_ids']
 
     offsets = tools.date_offset(
         key=ids,
-        offset_file=shift_days_col+'.csv',
-        name=shift_days_col,
-        offset_url=shift_days_history_path
+        offset_file=offsets_map_file,
+        name=offsets_history_path.stem,
+        offset_url=str(offsets_history_path)
     )
 
     date_columns = [date_columns] if isinstance(date_columns,str) else date_columns
