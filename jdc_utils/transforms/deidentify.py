@@ -13,22 +13,6 @@ versioned_filenames = {
     'replace_ids':'jdc_person_id.csv'
 }
 
-def _get_versioned_history_path(fxnname,history_path):
-    versioned_filename = Path(versioned_filenames[fxnname])
-    file_history_path = (
-        Path(history_path)
-        .joinpath(versioned_filename)
-        .with_suffix(".git")
-    )
-    return file_history_path
-
-def from_combined_mapfile(map_file_path,id_column,map_columns):
-
-    map_df = pd.read_csv(map_file_path)
-    map_file_path = map_df.parent.joinpath(map_column).with_suffix(".csv")
-    map_df.set_index(id_column)[map_column].to_csv(map_file_path)
-
-
 @pf.register_dataframe_method
 def replace_ids(df, id_file,map_file,history_path):
     """ 
@@ -128,7 +112,7 @@ def init_version_history(file_history_path,overwrite=False):
 
     return repo
 
-def init_version_history_all(history_path,working_directory,overwrite=False):
+def init_version_history_all(history_path,overwrite=False):
 
     history_path = Path(history_path)
 
@@ -137,8 +121,13 @@ def init_version_history_all(history_path,working_directory,overwrite=False):
         history_path.mkdir(exist_ok=True,parents=True)
 
     for fxn,file_name in versioned_filenames.items():
-        file_history_path = _get_versioned_history_path(fxn,file_name)
+        file_history_path = (
+            Path(history_path)
+            .joinpath(file_name)
+            .with_suffix(".git")
+        )
         _ = init_version_history(file_history_path,overwrite=overwrite)
+
 
 
 
