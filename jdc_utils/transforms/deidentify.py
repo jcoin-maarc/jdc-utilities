@@ -59,7 +59,14 @@ def shift_dates(
         date_columns,
         history_path):
     """ 
-    
+    This wrapper function combines dataforge's offset and shift_dates function:
+    1. Gets day offsets (one offset per individual
+    specified by id from random number of days between -162 and  163);
+    2. generates new offsets for new ids without day offsets, adds these
+    to a file storing these id <> day offset mappings and pushes them to 
+    a repository storing the history of these date shifts in a shared location
+    for easier collaboration and higher security.
+    3. Finally, all specified dates are shifted by these day offsets.
     """
 
     ids = df[id_column]
