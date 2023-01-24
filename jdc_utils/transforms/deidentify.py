@@ -13,6 +13,17 @@ versioned_filenames = {
     'replace_ids':'jdc_person_id.csv'
 }
 
+def combine_mappings(id_column,mapfilepath,tmp_historypath="tmp/git"):
+    """ 
+    join version controlled files into one
+    for convenience and accessibility
+    """
+    files = Path(tmp_historypath).glob("/*/*.csv")
+    merge = lambda dfx,dfy:dfx.merge(
+        dfy,on=id_column,how='outer'
+    )
+    return reduce(merge,files).to_csv(mapfilepath,index=False)
+
 @pf.register_dataframe_method
 def replace_ids(df, id_file,map_file,history_path):
     """ 
@@ -23,8 +34,9 @@ def replace_ids(df, id_file,map_file,history_path):
     1. Pulls in the most up-to-date version of previously mapped ids (called id_history_path).
     2. Maps any new ids to local ids (ie id_column) and adds these to the mapping file.
     3. Stores these mappings in a temporary file in tmp/git/ids.csv) which is then added (ie pushed) to the 
-    version control history in id_history_path. 
+    version control history in id_history_path and adds to mappings csv (not version controlled - just for convenience)
 
+    Returns this new DataFrame
 
     NOTES
     
@@ -47,7 +59,7 @@ def replace_ids(df, id_file,map_file,history_path):
         column=id_column,
         map_url=str(id_history_path)
     )
-
+    combine_mappings(id_column, history_path.parent/(history_path.name+".csv"))
     return df_new
 
 
@@ -67,6 +79,18 @@ def shift_dates(
     a repository storing the history of these date shifts in a shared location
     for easier collaboration and higher security.
     3. Finally, all specified dates are shifted by these day offsets.
+    Returns this new DataFrame and the mappings are also added to a csv 
+    (not version controlled - just for convenience) beside the mapping history directory folder
+    
+    NOTES
+    
+    - offsets_history_path is a git bare repository, meaning this directory contains the entire history for mapped ids including
+        the most recent version. 
+
+    - See the [dataforge function documentation](https://gitlab.com/phs-rcg/data-forge/-/blob/main/src/dataforge/tools.py) for more general details
+        on the shift_dates and date_offset functions used in this implementation.
+
+
     """
 
     ids = df[id_column]
@@ -97,7 +121,8 @@ def shift_dates(
     for col in date_columns:
         df_new['shifted_' + col] = df_new[col].dt.strftime('%Y%m%d')
         del df_new[col]
-    
+
+    combine_mappings(id_column, history_path.parent/(history_path.name+".csv"))
     return df_new
 
 
@@ -134,8 +159,3 @@ def init_version_history_all(history_path,overwrite=False):
             .with_suffix(".git")
         )
         _ = init_version_history(file_history_path,overwrite=overwrite)
-
-
-
-
-
