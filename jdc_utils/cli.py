@@ -3,7 +3,7 @@
 import click
 from jdc_utils.submission import CoreMeasures
 from jdc_utils.transforms import read_df, run_transformfile
-from jdc_utils.transforms.deidentify import shift_dates,replace_ids
+from jdc_utils.transforms.deidentify import shift_dates,replace_ids,init_version_history_all
 import os
 import pandas as pd
 import glob 
@@ -16,6 +16,10 @@ import sys
 def cli():
     """CLI for JDC utilities"""
     pass
+
+# TODO: make CLI more like 
+
+# 
 
 @click.command(
     name="replace-ids",
@@ -153,11 +157,7 @@ def transform(transform_file, file_paths):
     "--filepath",
     help="Path to directory where dataset file(s) live",
 )
-@click.option(
-    "--outdir",
-    help="Path to directory where dataset file(s) live",
-)
-def validate(filepath,outdir='.'):
+def validate(filepath):
     os.chdir(filepath)
     core_measures = CoreMeasures('.')
     core_measures.validate(write_to_file=True)
@@ -179,11 +179,23 @@ def validate(filepath,outdir='.'):
         )
         click.echo(core_measures.report.to_summary())
 
+@click.command()
+@click.option("--history-path",default=Path(".").as_posix()/"mappings-history")
+def init_history():
+    init_version_history_all(history_path)
+
+
+# deidentification commands
+cli.add_command(init_history, name="init-deidentify-history")
 cli.add_command(replace_ids, name="replace-ids")
 cli.add_command(shift_dates, name="shift-dates")
-cli.add_command(transform, name="transform")
+
+#validation
 cli.add_command(validate, name="validate")
 
+#pipeline
+cli.add_command(transform, name="transform")
+cli.add_command(run_all,name="run-all")
 
 if __name__ == "__main__":
     cli()
