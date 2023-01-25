@@ -1,3 +1,11 @@
+""" 
+Functions to support
+deidentification processes
+
+Combines functions from dataforge to support
+JDC specific needs. 
+
+"""
 import pandas as pd
 import numpy as np
 import re
@@ -6,6 +14,7 @@ import pandas_flavor as pf
 from pathlib import Path
 import git
 from dataforge import tools,ids 
+from functools import reduce
 
 
 versioned_filenames = {
@@ -13,19 +22,25 @@ versioned_filenames = {
     'replace_ids':'jdc_person_id.csv'
 }
 
-def combine_mappings(id_column,mapfilepath,tmp_historypath="tmp/git"):
+def _combine_mappings(id_column,mapfilepath):
     """ 
     join version controlled files into one
     for convenience and accessibility
+
+    NOTE: this is an internal fxn for use with 
+    functions using versioned controlled files 
+    (ie must be in a directory with tmp/git/<version control repo>)
     """
-    files = Path(tmp_historypath).glob("/*/*.csv")
+    
+    files = Path(".").glob("tmp/git/*/*.csv")
+    dfs = [pd.read_csv(f) for f in files]
     merge = lambda dfx,dfy:dfx.merge(
         dfy,on=id_column,how='outer'
     )
-    return reduce(merge,files).to_csv(mapfilepath,index=False)
+    return reduce(merge,dfs).to_csv(mapfilepath,index=False)
 
 @pf.register_dataframe_method
-def replace_ids(df, id_file,map_file,history_path):
+def replace_ids(df, id_file,id_column,history_path):
     """ 
     (pulls in the most up-to-date mappings stored in id_history_path).
     The id_history_path pulls in the most up to date id mappings. It is stored
@@ -49,17 +64,22 @@ def replace_ids(df, id_file,map_file,history_path):
 
     
     """
-    id_history_path = _get_versioned_history_path('replace_ids',history_path)
     id_map_file = versioned_filenames['replace_ids']
+    id_history_path = (
+        Path(history_path)
+        .joinpath(id_map_file)
+        .with_suffix(".git")
+        )
+    
 
     df_new = ids.replace_ids(
         df=df, 
         id_file=id_file,
         map_file=id_map_file,
         column=id_column,
-        map_url=str(id_history_path)
+        map_url=id_history_path.as_posix()
     )
-    combine_mappings(id_column, history_path.parent/(history_path.name+".csv"))
+    _combine_mappings(id_column, history_path.parent/(history_path.name+".csv"))
     return df_new
 
 
@@ -69,7 +89,8 @@ def shift_dates(
         df,
         id_column,
         date_columns,
-        history_path):
+        history_path,
+        seed=None):
     """ 
     This wrapper function combines dataforge's offset and shift_dates function:
     1. Gets day offsets (one offset per individual
@@ -94,14 +115,20 @@ def shift_dates(
     """
 
     ids = df[id_column]
-    offsets_history_path = _get_versioned_history_path('replace_ids',history_path)
-    offsets_map_file = versioned_filenames['replace_ids']
+    offsets_map_file = versioned_filenames['shift_dates']
+    offsets_history_path = (
+        Path(history_path)
+        .joinpath(offsets_map_file)
+        .with_suffix(".git")
+        )
+    
 
     offsets = tools.date_offset(
         key=ids,
         offset_file=offsets_map_file,
         name=offsets_history_path.stem,
-        offset_url=str(offsets_history_path)
+        offset_url=offsets_history_path.as_posix(),
+        seed=seed
     )
 
     date_columns = [date_columns] if isinstance(date_columns,str) else date_columns
@@ -122,7 +149,8 @@ def shift_dates(
         df_new['shifted_' + col] = df_new[col].dt.strftime('%Y%m%d')
         del df_new[col]
 
-    combine_mappings(id_column, history_path.parent/(history_path.name+".csv"))
+    #update mappings file
+    _combine_mappings(id_column, history_path.parent/(history_path.name+".csv"))
     return df_new
 
 
