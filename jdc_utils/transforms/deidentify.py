@@ -132,9 +132,13 @@ def shift_dates(
     )
 
     date_columns = [date_columns] if isinstance(date_columns,str) else date_columns
-
+        
     for col in date_columns:
-        df[col] = pd.to_datetime(df[col])
+        if not col in list(df):
+            print(f"{col} not in dataframe so removing from the date column list")
+            date_columns.remove(col)
+        else:
+            df[col] = pd.to_datetime(df[col])
 
     #shift the dates with saved offsets
     df_new = tools.shift_dates(
@@ -146,8 +150,7 @@ def shift_dates(
 
     #change to format specified in schema
     for col in date_columns:
-        df_new['shifted_' + col] = df_new[col].dt.strftime('%Y%m%d')
-        del df_new[col]
+        df_new[col] = df_new[col].dt.strftime('%Y%m%d')
 
     #update mappings file
     _combine_mappings(id_column, history_path.parent/(history_path.name+".csv"))

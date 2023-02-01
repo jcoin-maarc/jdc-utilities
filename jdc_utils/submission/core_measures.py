@@ -31,10 +31,18 @@ class CoreMeasures:
         (technically can also be a Package object in addition to a file path)
     """ 
 
-    def __init__(self,filepath):
+    def __init__(self,filepath,
+        id_file=None,id_column=None,history_path=None,
+        date_columns=None,outdir=None,**kwargs):
+
         self.filepath = filepath
+        self.id_file = id_file
+        self.id_column = id_column
+        self.history_path = history_path
+        self.date_columns = date_columns
+        self.outdir = outdir
         
-        source = Package(filepath)
+        source = Package(filepath,**kwargs)
         target = Package()
 
         for resource in source.resources:
@@ -48,9 +56,33 @@ class CoreMeasures:
                 target.add_resource(resource)
     
         self.package = transform(target,steps=[add_missing_fields(missing_value='Missing')])
+
+    def deidentify(self,id_file=None, id_column=None,
+        history_path=None, date_columns=None):
         
-        
-    
+        self.id_file = getattr(self,'id_file',id_file)
+        self.id_column = getattr(self,'id_column',id_column)
+        self.history_path = getattr(self, 'history_path',history_path)
+        self.date_columns = getattr(self, 'date_columns',date_columns)
+
+        for resource in self.package.resources:
+
+            sourcedf = (
+                resource
+                .to_pandas()
+                .replace_ids(
+                    id_file=self.id_file,
+                    id_column=self.id_column,
+                    history_path=self.history_path
+                )
+                .shift_dates(
+                    id_column=self.id_column,
+                    date_columns=self.date_columns,
+                    history_path=self.history_path)
+            )
+            resource.data = sourcedf
+            resource.format = "pandas"
+            
     def validate(self,outdir='',write_to_file=False):
         self.report = validate(self.package)
         
