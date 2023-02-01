@@ -9,7 +9,7 @@ from frictionless import Package,Resource
 from frictionless import transform,validate
 from collections import abc
 from dataforge.frictionless import add_missing_fields,write_package_report
-
+import re
 
 
 schemas = schema.core_measures.__dict__
@@ -29,6 +29,13 @@ class CoreMeasures:
         - path to a glob-like regular expression for multiple data files
         - can also be a package descriptor file (eg data-package.json) with resources
         (technically can also be a Package object in addition to a file path)
+    id_file (optional): the generated ids (see replace_id function for usage)
+    id_column (optional): id column(s) for deidentification fxns (see replace ids and shift date fxns)
+    history_path (optional): directory containing all version control history of mapping files (ie git bare repos)
+    date_columns (optional): the specified date columns for shift dates function 
+        (if none will default to all date col types in df. if no date col types, then will not convert anything
+    outdir (optional): directory to write core measure package
+    
     """ 
 
     def __init__(self,filepath,
@@ -51,8 +58,13 @@ class CoreMeasures:
                 .replace("-","")
                 .replace("_","")
             )
-            if name in list(schemas):
-                resource['schema'] = schemas[name]
+
+            #in case local files have prefixes etc
+            for s in schemas:
+                match = re.search(s,name)
+
+            if match:
+                resource['schema'] = schemas[match.group()]
                 target.add_resource(resource)
     
         self.package = transform(target,steps=[add_missing_fields(missing_value='Missing')])
@@ -90,10 +102,13 @@ class CoreMeasures:
             self.package,outdir,write_to_file
         )
 
-    def write(self,outdir=''):
-        #TODO: provide input for other study level info like 
-        # description etc
-        self.written_package = Package()
+    def write(self,outdir='',**kwargs):
+        """
+         writes package to core measure format
+         NOTE: use kwargs to pass in all package (ie hub)
+         specific package properties (title,name,desc etc)
+        """
+        self.written_package = Package(**kwargs)
 
         for resource in self.package['resources']:
             csvpath = f"{outdir}/data/{resource['name']}.csv"
