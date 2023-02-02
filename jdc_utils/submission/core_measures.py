@@ -119,18 +119,25 @@ class CoreMeasures:
          NOTE: use kwargs to pass in all package (ie hub)
          specific package properties (title,name,desc etc)
         """
+        self.add_schemas()
         self.written_package = Package(**kwargs)
-
+        os.chdir(outdir)
         for resource in self.package['resources']:
-            csvpath = f"{outdir}/data/{resource['name']}.csv"
-            schemapath = f"{outdir}/schemas/{resource['name']}.json"
+            csvpath = f"data/{resource['name']}.csv"
+            schemapath = f"schemas/{resource['name']}.json"
             
             resource.schema.to_json(schemapath)
             resource.to_petl().tocsv(csvpath)
 
             self.written_package.add_resource(Resource(path=csvpath,schema=schemapath))
         
-        self.written_package.to_json(f"{outdir}/data-package.json")
+        self.written_package.to_json(f"data-package.json")
+        self.written_package_report = validate("data-package.json")
+        self.written_package_report.to_json("report.json")
+        self.written_package_report.to_summary("report-summary.txt")
+
+
+
 
 
         
