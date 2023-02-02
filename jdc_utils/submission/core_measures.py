@@ -29,7 +29,7 @@ class CoreMeasures:
         - a path to a data file
         - path to a glob-like regular expression for multiple data files
         - can also be a package descriptor file (eg data-package.json) with resources
-        (technically can also be a Package object in addition to a file path)
+        - path to a package directory (either containing a dat-package.json or core measure data files)
     id_file (optional): the generated ids (see replace_id function for usage)
     id_column (optional): id column(s) for deidentification fxns (see replace ids and shift date fxns)
     history_path (optional): directory containing all version control history of mapping files (ie git bare repos)
@@ -49,26 +49,25 @@ class CoreMeasures:
         self.history_path = history_path
         self.date_columns = date_columns
         self.outdir = outdir
-        
-        source = Package(filepath,**kwargs)
-        target = Package()
+        self.filename = Path(filepath).name
 
+
+        if "*" in self.filename:
+            os.chdir(Path(filepath).parent)
+            source = Package(self.filename,**kwargs)
+        elif Path(filepath).is_dir():
+            os.chdir(filepath)
+            if Path('data-package.json').is_file():
+                source = Package("data-package.json",**kwargs)
+            elif Path('datapackage.json').is_file():
+                source = Package("datapackage.json",**kwargs)
+            else:
+                source = Package("*",**kwargs)
         for resource in source.resources:
-            name = (
-                resource.name.lower()
-                .replace("-","")
-                .replace("_","")
-            )
+            resource.data = resource.to_pandas()
+            resource.format = "pandas"
 
-            #in case local files have prefixes etc
-            for s in schemas:
-                match = re.search(s,name)
-
-            if match:
-                resource['schema'] = schemas[match.group()]
-                target.add_resource(resource)
-    
-        self.package = transform(target,steps=[add_missing_fields(missing_value='Missing')])
+        self.package = source
 
     def deidentify(self,id_file=None, id_column=None,
         history_path=None, date_columns=None,
@@ -97,14 +96,23 @@ class CoreMeasures:
 
             resource.data = sourcedf
             resource.format = "pandas"
-            
-    def validate(self,outdir='',write_to_file=False):
-        self.report = validate(self.package)
-        
-        return write_package_report(
-            self.package,outdir,write_to_file
-        )
+    
+    def add_schemas(self):
+        # add schema 
+        for resource in self.package.resources:
+            name = (
+                resource.name.lower()
+                .replace("-","")
+                .replace("_","")
+            )
 
+            #in case local files have prefixes etc
+            for s in schemas:
+                match = re.search(s,name)
+
+            if match:
+                resource['schema'] = schemas[match.group()]
+        
     def write(self,outdir='',**kwargs):
         """
          writes package to core measure format
