@@ -64,9 +64,10 @@ def replace_ids(df, id_file,id_column,history_path):
 
     
     """
+    history_path = Path(history_path)
     id_map_file = versioned_filenames['replace_ids']
     id_history_path = (
-        Path(history_path)
+        history_path
         .joinpath(id_map_file)
         .with_suffix(".git")
         )
@@ -113,11 +114,11 @@ def shift_dates(
 
 
     """
-
+    history_path = Path(history_path)
     ids = df[id_column]
     offsets_map_file = versioned_filenames['shift_dates']
     offsets_history_path = (
-        Path(history_path)
+        history_path
         .joinpath(offsets_map_file)
         .with_suffix(".git")
         )
