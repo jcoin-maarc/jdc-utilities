@@ -5,6 +5,7 @@ Generate and validate data package for submission by hubs
 import os
 from pathlib import Path
 from jdc_utils import schema
+from jdc_utils.transforms.deidentify import replace_ids,shift_dates
 from frictionless import Package,Resource
 from frictionless import transform,validate
 from collections import abc
@@ -70,7 +71,8 @@ class CoreMeasures:
         self.package = transform(target,steps=[add_missing_fields(missing_value='Missing')])
 
     def deidentify(self,id_file=None, id_column=None,
-        history_path=None, date_columns=None):
+        history_path=None, date_columns=None,
+        fxns=["replace_ids","shift_dates"]):
         
         self.id_file = getattr(self,'id_file',id_file)
         self.id_column = getattr(self,'id_column',id_column)
@@ -79,19 +81,20 @@ class CoreMeasures:
 
         for resource in self.package.resources:
 
-            sourcedf = (
-                resource
-                .to_pandas()
-                .replace_ids(
-                    id_file=self.id_file,
-                    id_column=self.id_column,
-                    history_path=self.history_path
-                )
-                .shift_dates(
-                    id_column=self.id_column,
-                    date_columns=self.date_columns,
-                    history_path=self.history_path)
-            )
+            sourcedf = resource.to_pandas()
+            
+            if "replace_ids" in fxns:
+                sourcedf = replace_ids(sourcedf,
+                        id_file=self.id_file,
+                        id_column=self.id_column,
+                        history_path=self.history_path
+                    )
+            if "shift_dates" in fxns:
+                sourcedf = shift_dates(sourcedf,
+                        id_column=self.id_column,
+                        date_columns=self.date_columns,
+                        history_path=self.history_path)
+
             resource.data = sourcedf
             resource.format = "pandas"
             
