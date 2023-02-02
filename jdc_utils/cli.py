@@ -82,13 +82,13 @@ or avoid work later and add future dateset (eg timepoints) date columns.
 
 @click.command("init",help="Initiates both a version control directory and a config file.")
 @click.option("--history-path",prompt=history_prompt)
-@click.option("--file-path",default="tmp/local",
+@click.option("--filepath",default="tmp/local",
     prompt=file_path_prompt,
     help="Path to the to-be processed (e.g., deidientifed, transferred to core measure package. If it doesn't exist, will create and you can copy your files here")
 @click.option("--id-file",prompt=id_file_prompt,default='data_mgmt/id_store/jdc_person_ids.txt')
 @click.option("--id-column",prompt=id_column_prompt)
 @click.option("--date-columns",prompt=date_columns_prompt)
-def init(history_path,file_path,id_file,id_column,date_columns):
+def init(history_path,filepath,id_file,id_column,date_columns):
 
     # create version control history
     if Path(history_path).exists():
@@ -97,18 +97,19 @@ def init(history_path,file_path,id_file,id_column,date_columns):
         init_version_history_all(history_path)
 
     # make directories
-    Path(file_path).mkdir(exist_ok=True,parents=True)
+    Path(filepath).mkdir(exist_ok=True,parents=True)
     Path(id_file).parent.mkdir(exist_ok=True,parents=True)
     
     with open("config.yaml","w",newline="") as f:
         
-        f.write(f"history_path: {str(Path(history_path).resolve())}")
+        #NOTE: posix path needed for frictionless paths
+        f.write(f"history_path: {(Path(history_path).resolve().as_posix())}")
         f.write(os.linesep)
-        f.write(f"file_path: {str(Path(file_path).resolve())}")
+        f.write(f"filepath: {Path(filepath).resolve().as_posix()}")
         f.write(os.linesep)
-        f.write(f"outdir: {str(Path('tmp/core-measures/').resolve())}")
+        f.write(f"outdir: {Path('tmp/core-measures/').resolve().as_posix()}")
         f.write(os.linesep)
-        f.write(f"id_file: {id_file}")
+        f.write(f"id_file: {Path(id_file).resolve().as_posix()}")
         f.write(os.linesep)
         f.write(f"id_column: {id_column}")
         f.write(os.linesep)
