@@ -36,7 +36,7 @@ def _combine_mappings(mapfilepath):
     dfs = [pd.read_csv(f) for f in files]
 
 
-    id_column = reduce(lambda dfx,dfy: set(dfx).intersection(dfy),dfs)
+    id_column = list(reduce(lambda dfx,dfy: set(dfx.columns.tolist()).intersection(dfy.columns.tolist()),dfs))
     merge = lambda dfx,dfy:dfx.merge(
         dfy,on=id_column,how='outer'
     )
