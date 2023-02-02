@@ -51,24 +51,29 @@ class CoreMeasures:
         self.outdir = outdir
         self.filename = Path(filepath).name
 
+        # NOTE for code below: frictionless security doesn't play well with particular paths
+        # see: https://specs.frictionlessdata.io/data-resource/#data-location
         pwd = os.getcwd()
+        os.chdir(Path(filepath).parent)
         if "*" in self.filename:
-            os.chdir(Path(filepath).parent)
             source = Package(self.filename,**kwargs)
         elif Path(filepath).is_dir():
-            os.chdir(filepath)
+            os.chdir(Path(filepath).name)
             if Path('data-package.json').is_file():
                 source = Package("data-package.json",**kwargs)
             elif Path('datapackage.json').is_file():
                 source = Package("datapackage.json",**kwargs)
             else:
                 source = Package("*",**kwargs)
-        for resource in source.resources:
-            resource.data = resource.to_pandas()
+        
+        target = Package(source)
+        for resource in target.resources:
+            name = resource.name
+            resource.data = resource.to_pandas().applymap(lambda v: None if pd.isna(v) else v)
             resource.format = "pandas"
-
-        self.package = source
-        os.chdir(pwd) #NOTE: change dir back to base dir for other steps
+            resource.name = name
+        self.package = target
+        os.chdir(pwd) #NOTE: change dir to base dir for other steps
 
     def deidentify(self,id_file=None, id_column=None,
         history_path=None, date_columns=None,
@@ -118,7 +123,7 @@ class CoreMeasures:
             if match:
                 resource['schema'] = schemas[match.group()]
         
-    def write(self,outdir='',**kwargs):
+    def write(self,outdir='tmp/core-measures',**kwargs):
         """
          writes package to core measure format
          NOTE: use kwargs to pass in all package (ie hub)
@@ -126,20 +131,23 @@ class CoreMeasures:
         """
         self.add_schemas()
         self.written_package = Package(**kwargs)
+        Path(outdir).mkdir(exist_ok=True)
         os.chdir(outdir)
+        Path("schemas").mkdir(exist_ok=True)
+        Path("data").mkdir(exist_ok=True)
         for resource in self.package['resources']:
             csvpath = f"data/{resource['name']}.csv"
             schemapath = f"schemas/{resource['name']}.json"
             
             resource.schema.to_json(schemapath)
-            resource.to_petl().tocsv(csvpath)
+            resource.write(csvpath)
 
             self.written_package.add_resource(Resource(path=csvpath,schema=schemapath))
         
         self.written_package.to_json(f"data-package.json")
         self.written_package_report = validate("data-package.json")
         self.written_package_report.to_json("report.json")
-        self.written_package_report.to_summary("report-summary.txt")
+        Path("report-summary.txt").write_text(self.written_package_report.to_summary())
 
 
 
