@@ -80,7 +80,7 @@ class CoreMeasures:
 
         for resource in self.package.resources:
 
-            sourcedf = resource.to_pandas()
+            sourcedf = resource.data.copy()
             
             if "replace_ids" in fxns:
                 sourcedf = replace_ids(sourcedf,
