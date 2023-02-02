@@ -16,35 +16,48 @@ def cli():
 @click.command("run",context_settings={'default_map':config.get()})
 @click.option("--history-path")
 @click.option("--filepath",default="tmp/local")
-@click.option("--id-file")
+@click.option("--id-file",default="data_mgmt/id_store/jdc_person_ids.txt")
 @click.option("--id-column",default=None)
 @click.option("--date-columns",default=None)
-@click.option("--outdir")
+@click.option("--outdir",default="tmp/core-measures")
 @click.option("--validate-only",is_flag=True,default=False)
-def run(history_path,file_path,id_file,id_column,date_columns,outdir,validate_only):
+@click.option("--deidentify-only",is_flag=True,default=False)
+def run(history_path,filepath,id_file,id_column,date_columns,outdir,validate_only,deidentify_only):
 
-    if not validate_only:
+    #CHECK: if running deidentify need these params
+    if not validate_only or deidentify_only:
         assert history_path
-        assert file_path
+        assert filepath
         assert id_file
         assert id_column 
         assert date_columns
+        assert outdir
+    elif validate_only:
+        assert filepath 
         assert outdir 
-        core_measures = CoreMeasures(
-            filepath=file_path,
-            id_file=id_file,
-            id_column=id_column,
-            date_columns=date_columns,
-            outdir=outdir,
-            history_path=history_path   
-        )
+
+    core_measures = CoreMeasures(
+        filepath=filepath,
+        id_file=id_file,
+        id_column=id_column,
+        date_columns=date_columns,
+        outdir=outdir,
+        history_path=history_path   
+    )
+    #1. running entire pipeline
+    if not validate_only and not deidentify_only:
+
         core_measures.deidentify()
         core_measures.write()
-    else:
-        CoreMeasures(file_path=file_path,outdir=outdir).write()
-
-    os.chdir(outdir)
-    CoreMeasures("data-package.json").validate()
+    #2. deidentified but not in package
+    elif deidentify_only:
+        Path("tmp/deidentified").mkdir(exist_ok=True,parents=True)
+        core_measures.deidentify()
+        for resource in core_measures.package.resources:
+            resource.write("tmp/deidentified/{resource.name}.csv")
+    #3. already deidentified -- just need to package and validate
+    elif validate_only:
+        core_measures.write()
 
 
 id_file_prompt = """
