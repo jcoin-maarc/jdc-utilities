@@ -11,7 +11,7 @@ from frictionless import transform,validate
 from collections import abc
 from dataforge.frictionless import add_missing_fields,write_package_report
 import re
-
+import pandas as pd
 
 schemas = schema.core_measures.__dict__
 
@@ -51,7 +51,7 @@ class CoreMeasures:
         self.outdir = outdir
         self.filename = Path(filepath).name
 
-
+        pwd = os.getcwd()
         if "*" in self.filename:
             os.chdir(Path(filepath).parent)
             source = Package(self.filename,**kwargs)
@@ -68,6 +68,7 @@ class CoreMeasures:
             resource.format = "pandas"
 
         self.package = source
+        os.chdir(pwd) #NOTE: change dir back to base dir for other steps
 
     def deidentify(self,id_file=None, id_column=None,
         history_path=None, date_columns=None,
@@ -89,8 +90,12 @@ class CoreMeasures:
                         history_path=self.history_path
                     )
             if "shift_dates" in fxns:
+                if "replace_ids" in fxns:
+                    id_column = pd.read_csv(self.id_file).squeeze().name 
+                else:
+                    id_column = self.id_column
                 sourcedf = shift_dates(sourcedf,
-                        id_column=self.id_column,
+                        id_column=id_column,
                         date_columns=self.date_columns,
                         history_path=self.history_path)
 
