@@ -1,15 +1,11 @@
 """CLI for JDC utilities"""
-
 import click
+from jdc_utils import config
 from jdc_utils.submission import CoreMeasures
 from jdc_utils.transforms import read_df, run_transformfile
-from jdc_utils.transforms.deidentify import shift_dates,replace_ids,init_version_history_all
+from jdc_utils.transforms.deidentify import init_version_history_all
 import os
-import pandas as pd
-import glob 
-from pathlib import Path 
-import yaml
-import sys 
+from pathlib import Path
 import confuse
 # overall CLI
 @click.group()
@@ -17,12 +13,9 @@ def cli():
     """CLI for JDC utilities"""
     pass
 
-config = confuse.Configuration('jdc')
-config.set_file('config.yaml')
-
 @click.command("run",context_settings={'default_map':config.get()})
 @click.option("--history-path")
-@click.option("--file-path",default="tmp/local")
+@click.option("--filepath",default="tmp/local")
 @click.option("--id-file")
 @click.option("--id-column",default=None)
 @click.option("--date-columns",default=None)
