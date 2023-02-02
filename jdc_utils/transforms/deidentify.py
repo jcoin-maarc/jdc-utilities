@@ -22,7 +22,7 @@ versioned_filenames = {
     'replace_ids':'jdc_person_id.csv'
 }
 
-def _combine_mappings(id_column,mapfilepath):
+def _combine_mappings(mapfilepath):
     """ 
     join version controlled files into one
     for convenience and accessibility
@@ -34,6 +34,9 @@ def _combine_mappings(id_column,mapfilepath):
     
     files = Path(".").glob("tmp/git/*/*.csv")
     dfs = [pd.read_csv(f) for f in files]
+
+
+    id_column = reduce(lambda dfx,dfy: set(dfx).intersection(dfy),dfs)
     merge = lambda dfx,dfy:dfx.merge(
         dfy,on=id_column,how='outer'
     )
@@ -80,7 +83,7 @@ def replace_ids(df, id_file,id_column,history_path):
         column=id_column,
         map_url=id_history_path.as_posix()
     )
-    _combine_mappings(id_column, history_path.parent/(history_path.name+".csv"))
+    _combine_mappings(history_path.parent/(history_path.name+".csv"))
     return df_new
 
 
@@ -154,7 +157,7 @@ def shift_dates(
         df_new[col] = df_new[col].dt.strftime('%Y%m%d')
 
     #update mappings file
-    _combine_mappings(id_column, history_path.parent/(history_path.name+".csv"))
+    _combine_mappings(history_path.parent/(history_path.name+".csv"))
     return df_new
 
 
