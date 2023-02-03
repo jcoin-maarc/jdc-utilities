@@ -12,6 +12,7 @@ from collections import abc
 from dataforge.frictionless import add_missing_fields,write_package_report
 import re
 import pandas as pd
+import copy 
 
 schemas = schema.core_measures.__dict__
 
@@ -53,11 +54,13 @@ class CoreMeasures:
 
         # NOTE for code below: frictionless security doesn't play well with particular paths
         # see: https://specs.frictionlessdata.io/data-resource/#data-location
+        Path(filepath).parent.mkdir(exist_ok=True,parents=True)
         pwd = os.getcwd()
+        print(pwd)
         os.chdir(Path(filepath).parent)
         if "*" in self.filename:
             source = Package(self.filename,**kwargs)
-        elif Path(filepath).is_dir():
+        elif Path(Path(filepath).name).is_dir():
             os.chdir(Path(filepath).name)
             if Path('data-package.json').is_file():
                 source = Package("data-package.json",**kwargs)
@@ -65,7 +68,7 @@ class CoreMeasures:
                 source = Package("datapackage.json",**kwargs)
             else:
                 source = Package("*",**kwargs)
-        
+        print(os.getcwd())
         target = Package(source)
         for resource in target.resources:
             name = resource.name
@@ -73,36 +76,49 @@ class CoreMeasures:
             resource.format = "pandas"
             resource.name = name
         self.package = target
+        
         os.chdir(pwd) #NOTE: change dir to base dir for other steps
 
     def deidentify(self,id_file=None, id_column=None,
         history_path=None, date_columns=None,
         fxns=["replace_ids","shift_dates"]):
         
-        self.id_file = getattr(self,'id_file',id_file)
-        self.id_column = getattr(self,'id_column',id_column)
-        self.history_path = getattr(self, 'history_path',history_path)
-        self.date_columns = getattr(self, 'date_columns',date_columns)
-
+        def _getattrcopy(varstr,var):
+            return copy.copy(getattr(self,varstr,None))
+              
+        if id_file:
+            setattr(self,'id_file',id_file)
+        if id_column:
+            setattr(self,'id_column',id_column)
+        if history_path:
+            setattr(self,'history_path',history_path)
+        if date_columns:
+            setattr(self,'date_columns',date_columns)
+  
         for resource in self.package.resources:
+
+            id_file = _getattrcopy('id_file',id_file)
+            id_column = _getattrcopy('id_column',id_column)
+            history_path =  _getattrcopy('history_path',history_path)
+            date_columns =  _getattrcopy('date_columns',date_columns)
 
             sourcedf = resource.data.copy()
             
             if "replace_ids" in fxns:
                 sourcedf = replace_ids(sourcedf,
-                        id_file=self.id_file,
-                        id_column=self.id_column,
-                        history_path=self.history_path
+                        id_file=id_file,
+                        id_column=id_column,
+                        history_path=history_path
                     )
             if "shift_dates" in fxns:
                 if "replace_ids" in fxns:
                     id_column = pd.read_csv(self.id_file).squeeze().name 
                 else:
-                    id_column = self.id_column
+                    id_column = _getattrcopy('id_column',id_column)
                 sourcedf = shift_dates(sourcedf,
                         id_column=id_column,
-                        date_columns=self.date_columns,
-                        history_path=self.history_path)
+                        date_columns=date_columns,
+                        history_path=history_path)
 
             resource.data = sourcedf
             resource.format = "pandas"
