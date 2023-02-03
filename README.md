@@ -1,21 +1,12 @@
-**THIS README IS A WORK IN PROGRESS!**
-
 # Utilities for de-identifying data, transforming data, and validating data for JDC submissions
+ 
+The JDC utilities provide tools for de-identifying, harmonizing, and validating data according to JCOIN data
+commons specifications and standards.
 
+This repository provides python-based functions to achieve these goals and exposes a command line interface
+to quickly (1) initiate your configuration and (2) run deidentification, transformations, and validation.
 
-
-## Proposed workflow for submitting individual level data
-
-The idea behind this version of the jdc utilities is three-fold. 
-
-1. To provide tools to build a stand-alone data package (that includes metadata and data) via the frictionless framework and software suite of tools.
-2. To expose a command line interface to make these tools easier to use and easier to understand intermediate steps. For example, to see how 
-the replace id function has replaced ids, to compare the shifted to non shifted dates, and finally to view the transformed dataset that either passed
-validation (ie conformed to the given data model or did not). 
-3. To provide tools to automatically go from this stand-alone (but harmonized) data package into the JDC data model for quick exploration of important variables.
-
-
-This workflow provides a scalable way to manage different hub data collection procedures and general enough that many of these elements can be generalized to other use cases. 
+These tools are (and can be) leveraged in specific JCOIN hub workflows at various points in the data curation workflow. 
 
 ## Options for using tools
 
@@ -28,14 +19,12 @@ There are several options to use these jdc utilities.
 
 ## Workflow steps
 
-The output of each workflow is saved in order to understand the intermediate steps. 
+### deidentification
+ 
+#### replace ids
+<add CLI help here>
 
-TODO: CLI function that runs all steps at once
-
-### replace ids
-<add text here>
-
-### shift dates
+#### shift dates
 <add CLI help text>
 
 ### transform data
