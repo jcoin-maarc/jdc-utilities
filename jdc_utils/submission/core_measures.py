@@ -83,7 +83,7 @@ class CoreMeasures:
         history_path=None, date_columns=None,
         fxns=["replace_ids","shift_dates"]):
         
-        def _getattrcopy(varstr,var):
+        def _getattrcopy(varstr):
             return copy.copy(getattr(self,varstr,None))
               
         if id_file:
@@ -96,11 +96,10 @@ class CoreMeasures:
             setattr(self,'date_columns',date_columns)
   
         for resource in self.package.resources:
-
-            id_file = _getattrcopy('id_file',id_file)
-            id_column = _getattrcopy('id_column',id_column)
-            history_path =  _getattrcopy('history_path',history_path)
-            date_columns =  _getattrcopy('date_columns',date_columns)
+            id_file = _getattrcopy('id_file')
+            id_column = _getattrcopy('id_column')
+            history_path =  _getattrcopy('history_path')
+            date_columns =  _getattrcopy('date_columns')
 
             sourcedf = resource.data.copy()
             
