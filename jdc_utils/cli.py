@@ -18,7 +18,7 @@ def cli():
 @click.option("--filepath",default="tmp/local")
 @click.option("--id-file",default="data_mgmt/id_store/jdc_person_ids.txt")
 @click.option("--id-column",default=None)
-@click.option("--date-columns",default=None)
+@click.option("--date-columns",default=None,multiple=True)
 @click.option("--outdir",default="tmp/core-measures")
 @click.option("--validate-only",is_flag=True,default=False)
 @click.option("--deidentify-only",is_flag=True,default=False)
@@ -34,8 +34,10 @@ def run(history_path,filepath,id_file,id_column,date_columns,outdir,validate_onl
         assert outdir
     elif validate_only:
         assert filepath 
-        assert outdir 
-
+        assert outdir
+    
+    date_columns = list(date_columns)
+    
     core_measures = CoreMeasures(
         filepath=filepath,
         id_file=id_file,
@@ -46,7 +48,7 @@ def run(history_path,filepath,id_file,id_column,date_columns,outdir,validate_onl
     )
     #1. running entire pipeline
     if not validate_only and not deidentify_only:
-
+        
         core_measures.deidentify()
         core_measures.write()
     #2. deidentified but not in package
