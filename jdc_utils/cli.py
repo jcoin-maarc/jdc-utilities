@@ -54,7 +54,7 @@ def run(history_path,filepath,id_file,id_column,date_columns,outdir,validate_onl
         Path("tmp/deidentified").mkdir(exist_ok=True,parents=True)
         core_measures.deidentify()
         for resource in core_measures.package.resources:
-            resource.write("tmp/deidentified/{resource.name}.csv")
+            resource.write(f"tmp/deidentified/{resource.name}.csv")
     #3. already deidentified -- just need to package and validate
     elif validate_only:
         core_measures.write()
