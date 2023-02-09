@@ -20,7 +20,7 @@ setup(
         'pandera>=0.9.0',
         'jsonpath_ng>=1.5.3',
         'requests>=2.27.1',
-        'frictionless>=4.26.0',
+        'frictionless==4.26.0',
         'gen3>=4.4.0',
         'pyreadstat>=1.1.7'
     ],
