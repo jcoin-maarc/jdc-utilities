@@ -10,7 +10,7 @@ setup(
     packages=find_namespace_packages(where='.'),
     package_data={'jdc_utils': ['frictionless/table_schemas/table_schema_urls.yaml']},
     install_requires=[
-        'pandas>=1.4.1',
+        'pandas==1.4.1',
         'pandas_flavor>=0.2.0',
         'gitpython>=3.1.27',
         'click>=8.1.2',
