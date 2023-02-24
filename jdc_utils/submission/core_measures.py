@@ -13,7 +13,7 @@ from dataforge.frictionless import add_missing_fields,write_package_report
 import re
 import pandas as pd
 import copy 
-
+from abc import ABC,abstractmethod
 schemas = schema.core_measures.__dict__
 
 class CoreMeasures:
@@ -40,9 +40,15 @@ class CoreMeasures:
     
     """ 
 
-    def __init__(self,filepath,
-        id_file=None,id_column=None,history_path=None,
-        date_columns=None,outdir=None,**kwargs):
+    def __init__(
+        self,
+        filepath=None,
+        id_file=None,
+        id_column=None,
+        history_path=None,
+        date_columns=None,
+        outdir=None,
+        **kwargs):
 
         self.filepath = filepath
         self.id_file = id_file
@@ -51,10 +57,12 @@ class CoreMeasures:
         self.date_columns = date_columns
         self.outdir = outdir
         self.filename = Path(filepath).name
+        
+        to_package()
 
+    def to_package():
         # NOTE for code below: frictionless security doesn't play well with particular paths
         # see: https://specs.frictionlessdata.io/data-resource/#data-location
-        Path(filepath).parent.mkdir(exist_ok=True,parents=True)
         pwd = os.getcwd()
         print(pwd)
         os.chdir(Path(filepath).parent)
@@ -69,15 +77,50 @@ class CoreMeasures:
             else:
                 source = Package("*",**kwargs)
         print(os.getcwd())
-        target = Package(source)
-        for resource in target.resources:
+
+        self.package = None 
+        self.sourcepackage = None
+
+        if is_core_measure_package:
+            self.package = source
+        else:
+            self.sourcepackage = source
+
+        for resource in self.sourcepackage.resources:
             name = resource.name
             resource.data = resource.to_pandas().applymap(lambda v: None if pd.isna(v) else v)
             resource.format = "pandas"
             resource.name = name
-        self.package = target
         
         os.chdir(pwd) #NOTE: change dir to base dir for other steps
+
+    def to_baseline():
+        """ 
+        takes the source package and generates the baseline resource
+        for the core measure package.
+
+        This should result in the incorporation of the baseline resource 
+        to the core measure data package.
+
+        However, if the source package is already in the proper format
+        and has been transformed, there is no need to use this function.
+
+        """ 
+        print("This is specific for each hub. Please define your specific function here.")
+
+    def to_timepoints():
+        """ 
+        takes the source package and generates the timepoint resource
+        for the core measure package.
+
+        This should result in the incorporation of the timepoints resource to the core mesure data
+        package.
+
+        However, if the source package is already in the proper format
+        and has been transformed, there is no need to use this function.
+
+        """ 
+        print("This is specific for each hub. Please define your specific function here.")
 
     def deidentify(self,id_file=None, id_column=None,
         history_path=None, date_columns=None,
@@ -121,8 +164,8 @@ class CoreMeasures:
 
             resource.data = sourcedf
             resource.format = "pandas"
-    
-    def add_schemas(self):
+            
+    def _add_schemas(self):
         # add schema 
         for resource in self.package.resources:
             name = (
@@ -144,7 +187,7 @@ class CoreMeasures:
          NOTE: use kwargs to pass in all package (ie hub)
          specific package properties (title,name,desc etc)
         """
-        self.add_schemas()
+        self._add_schemas()
         self.written_package = Package(**kwargs)
         Path(outdir).mkdir(exist_ok=True)
         os.chdir(outdir)
@@ -163,6 +206,7 @@ class CoreMeasures:
         self.written_package_report = validate("data-package.json")
         self.written_package_report.to_json("report.json")
         Path("report-summary.txt").write_text(self.written_package_report.to_summary())
+        return self
 
 
 
