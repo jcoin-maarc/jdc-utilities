@@ -1,5 +1,9 @@
 from jdc_utils.io import read_df
 
+#backwards compatability
+from .curation import *
+from .deidentify import *
+
 def read_transformfile(transformfile):
     with open(transformfile) as file:
         return yaml.safe_load(file)
