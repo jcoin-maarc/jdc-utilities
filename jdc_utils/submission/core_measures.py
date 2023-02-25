@@ -30,13 +30,16 @@ class CoreMeasures:
         - a path to a data file
         - path to a glob-like regular expression for multiple data files
         - can also be a package descriptor file (eg data-package.json) with resources
-        - path to a package directory (either containing a dat-package.json or core measure data files)
+        - path to a package directory (either containing a data-package.json,core measure data files, or input files to be transformed into core measure files)
     id_file (optional): the generated ids (see replace_id function for usage)
     id_column (optional): id column(s) for deidentification fxns (see replace ids and shift date fxns)
     history_path (optional): directory containing all version control history of mapping files (ie git bare repos)
     date_columns (optional): the specified date columns for shift dates function 
         (if none will default to all date col types in df. if no date col types, then will not convert anything
     outdir (optional): directory to write core measure package
+    is_core_measures:boolean (optional): Specifies whether the input is already a core measure package.
+    This may occur if there are the necessary files (ie baseline.csv and timepoints.csv) and only
+    packaging is required. For exmaple, ther may be a separate workflow that does the transformations.
     
     """ 
 
@@ -48,6 +51,7 @@ class CoreMeasures:
         history_path=None,
         date_columns=None,
         outdir=None,
+        is_core_measures=False
         **kwargs):
 
         self.filepath = filepath
@@ -58,35 +62,35 @@ class CoreMeasures:
         self.outdir = outdir
         self.filename = Path(filepath).name
         
-        to_package()
-
-    def to_package():
-        # NOTE for code below: frictionless security doesn't play well with particular paths
-        # see: https://specs.frictionlessdata.io/data-resource/#data-location
-        pwd = os.getcwd()
-        print(pwd)
-        os.chdir(Path(filepath).parent)
-        if "*" in self.filename:
-            source = Package(self.filename,**kwargs)
-        elif Path(Path(filepath).name).is_dir():
-            os.chdir(Path(filepath).name)
-            if Path('data-package.json').is_file():
-                source = Package("data-package.json",**kwargs)
-            elif Path('datapackage.json').is_file():
-                source = Package("datapackage.json",**kwargs)
-            else:
-                source = Package("*",**kwargs)
-        print(os.getcwd())
-
         self.package = None 
         self.sourcepackage = None
 
-        if is_core_measure_package:
-            self.package = source
-        else:
-            self.sourcepackage = source
 
-        for resource in self.sourcepackage.resources:
+        pwd = os.getcwd()
+        filename = self.filename 
+        filepath = self.filepath
+        print(pwd)
+        # NOTE for code below: frictionless security doesn't play well with particular paths
+        # see: https://specs.frictionlessdata.io/data-resource/#data-location
+        os.chdir(Path(filepath).parent)
+
+        if Path(Path(filepath).name).is_dir():
+            os.chdir(Path(filepath).name)
+            if Path('data-package.json').is_file():
+                package = Package("data-package.json",**kwargs)
+            elif Path('datapackage.json').is_file():
+                package = Package("datapackage.json",**kwargs)
+            else:
+                package = Package("*",**kwargs)
+        else:
+            package = Package(filename)
+
+        print(os.getcwd())
+
+        # has data package
+        # has a baseline and timepoints resource
+
+        for resource in package.resources:
             name = resource.name
             resource.data = resource.to_pandas().applymap(lambda v: None if pd.isna(v) else v)
             resource.format = "pandas"
@@ -94,30 +98,36 @@ class CoreMeasures:
         
         os.chdir(pwd) #NOTE: change dir to base dir for other steps
 
+        if is_core_measures:
+            self.package = package 
+        else:
+            self.sourcepackage = package
+            self.package = Package()
+        
     def to_baseline():
         """ 
-        takes the source package and generates the baseline resource
-        for the core measure package.
+        takes the source package (self.sourcepackage) and, after the necessary transforms,
+        adds the baseline resource
+        to the core measure package in the format of a pandas dataframe (self.package).
 
-        This should result in the incorporation of the baseline resource 
-        to the core measure data package.
 
-        However, if the source package is already in the proper format
-        and has been transformed, there is no need to use this function.
+        Note, if is_core_measure is specified -- for example if there are already 
+        the appropriate data files, this function isn't necessary, which is why
+        it is optional rather than required with @abstractmethod.
 
         """ 
         print("This is specific for each hub. Please define your specific function here.")
 
     def to_timepoints():
         """ 
-        takes the source package and generates the timepoint resource
-        for the core measure package.
+        takes the source package (self.sourcepackage) and, after the necessary transforms,
+        adds the timepoints resource
+        to the core measure package in the format of a pandas dataframe (self.package).
 
-        This should result in the incorporation of the timepoints resource to the core mesure data
-        package.
 
-        However, if the source package is already in the proper format
-        and has been transformed, there is no need to use this function.
+        Note, if is_core_measure is specified -- for example if there are already 
+        the appropriate data files, this function isn't necessary, which is why
+        it is optional rather than required with @abstractmethod.
 
         """ 
         print("This is specific for each hub. Please define your specific function here.")
@@ -181,7 +191,7 @@ class CoreMeasures:
             if match:
                 resource['schema'] = schemas[match.group()]
         
-    def write(self,outdir='tmp/core-measures',**kwargs):
+    def write(self,outdir=None,**kwargs):
         """
          writes package to core measure format
          NOTE: use kwargs to pass in all package (ie hub)
@@ -189,6 +199,12 @@ class CoreMeasures:
         """
         self._add_schemas()
         self.written_package = Package(**kwargs)
+
+        if self.outdir:
+            outdir = self.outdir 
+        else:
+            self.outdir = outdir
+
         Path(outdir).mkdir(exist_ok=True)
         os.chdir(outdir)
         Path("schemas").mkdir(exist_ok=True)
