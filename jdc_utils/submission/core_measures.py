@@ -187,17 +187,28 @@ class CoreMeasures:
             #in case local files have prefixes etc
             for s in schemas:
                 match = re.search(s,name)
+                if match:
+                    resource['schema'] = schemas[match.group()]
+    
+    def sync(self):
+        """ 
+        if a core measure package exists
+        sync by adding most up to date schemas and 
+        adding missing fields.
+        """ 
 
-            if match:
-                resource['schema'] = schemas[match.group()]
-        
+        self._add_schemas()
+        self.package = transform(self.package,steps=[
+                add_missing_fields(missing_value="Missing")])
+                
     def write(self,outdir=None,**kwargs):
         """
          writes package to core measure format
          NOTE: use kwargs to pass in all package (ie hub)
          specific package properties (title,name,desc etc)
         """
-        self._add_schemas()
+        self.sync()
+
         self.written_package = Package(**kwargs)
 
         if self.outdir:
