@@ -38,9 +38,9 @@ class CoreMeasures:
         (if none will default to all date col types in df. if no date col types, then will not convert anything
     outdir (optional): directory to write core measure package
     is_core_measures:boolean (optional): Specifies whether the input is already a core measure package.
-    This may occur if there are the necessary files (ie baseline.csv and timepoints.csv) and only
-    packaging is required. For exmaple, ther may be a separate workflow that does the transformations.
-    
+     This may occur if there are the necessary files (ie baseline.csv and timepoints.csv) and only
+     packaging is required. For exmaple, ther may be a separate workflow that does the transformations.
+    kwargs: any other package properties you want to pass into the Package object
     """ 
 
     def __init__(
@@ -51,7 +51,7 @@ class CoreMeasures:
         history_path=None,
         date_columns=None,
         outdir=None,
-        is_core_measures=False
+        is_core_measures=False,
         **kwargs):
 
         self.filepath = filepath
@@ -83,7 +83,7 @@ class CoreMeasures:
             else:
                 package = Package("*",**kwargs)
         else:
-            package = Package(filename)
+            package = Package(filename,**kwargs)
 
         print(os.getcwd())
 
@@ -92,7 +92,7 @@ class CoreMeasures:
 
         for resource in package.resources:
             name = resource.name
-            resource.data = resource.to_pandas().applymap(lambda v: None if pd.isna(v) else v)
+            resource.data = resource.to_petl().todf()
             resource.format = "pandas"
             resource.name = name
         
@@ -100,9 +100,10 @@ class CoreMeasures:
 
         if is_core_measures:
             self.package = package 
+            self.sync()
         else:
             self.sourcepackage = package
-            self.package = Package()
+            self.package = Package(**kwargs)
         
     def to_baseline():
         """ 
@@ -117,7 +118,7 @@ class CoreMeasures:
 
         """ 
         print("This is specific for each hub. Please define your specific function here.")
-
+        return self
     def to_timepoints():
         """ 
         takes the source package (self.sourcepackage) and, after the necessary transforms,
@@ -131,6 +132,7 @@ class CoreMeasures:
 
         """ 
         print("This is specific for each hub. Please define your specific function here.")
+        return self
 
     def deidentify(self,id_file=None, id_column=None,
         history_path=None, date_columns=None,
