@@ -135,7 +135,10 @@ class CoreMeasures:
     def deidentify(self,id_file=None, id_column=None,
         history_path=None, date_columns=None,
         fxns=["replace_ids","shift_dates"]):
-        
+        """ apply deidentification steps to the source package
+        """ 
+        assert self.sourcepackage
+
         def _getattrcopy(varstr):
             return copy.copy(getattr(self,varstr,None))
               
@@ -148,7 +151,7 @@ class CoreMeasures:
         if date_columns:
             setattr(self,'date_columns',date_columns)
   
-        for resource in self.package.resources:
+        for resource in self.sourcepackage.resources:
             id_file = _getattrcopy('id_file')
             id_column = _getattrcopy('id_column')
             history_path =  _getattrcopy('history_path')
@@ -174,6 +177,8 @@ class CoreMeasures:
 
             resource.data = sourcedf
             resource.format = "pandas"
+
+        return self
             
     def _add_schemas(self):
         # add schema 
