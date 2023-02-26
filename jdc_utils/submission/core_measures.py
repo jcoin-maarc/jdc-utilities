@@ -232,7 +232,7 @@ class CoreMeasures:
             schemapath = f"schemas/{resource['name']}.json"
             
             resource.schema.to_json(schemapath)
-            resource.write(csvpath)
+            resource.to_petl().tocsv(csvpath)
 
             self.written_package.add_resource(Resource(path=csvpath,schema=schemapath))
         
