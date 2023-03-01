@@ -18,29 +18,37 @@ schemas = schema.core_measures.__dict__
 
 class CoreMeasures:
     """ 
-    object that takes in a path-like object pointing to data file(s)
-    or anything accepted by the
-    frictionless package object (eg a datapackage.json)
+    Object that takes in a path-like object pointing to data file(s)
+    or anything accepted by the frictionless package object
+    (e.g., a datapackage.json) containing the paths to resources (filepath).
     
-    package containing the paths to resources (filepath) 
-    
-    Paramaters
-    --------------
-    filepath: can be one of:
-        - a path to a data file
-        - path to a glob-like regular expression for multiple data files
-        - can also be a package descriptor file (eg data-package.json) with resources
-        - path to a package directory (either containing a data-package.json,core measure data files, or input files to be transformed into core measure files)
-    id_file (optional): the generated ids (see replace_id function for usage)
-    id_column (optional): id column(s) for deidentification fxns (see replace ids and shift date fxns)
-    history_path (optional): directory containing all version control history of mapping files (ie git bare repos)
-    date_columns (optional): the specified date columns for shift dates function 
-        (if none will default to all date col types in df. if no date col types, then will not convert anything
-    outdir (optional): directory to write core measure package
-    is_core_measures:boolean (optional): Specifies whether the input is already a core measure package.
-     This may occur if there are the necessary files (ie baseline.csv and timepoints.csv) and only
-     packaging is required. For exmaple, ther may be a separate workflow that does the transformations.
-    kwargs: any other package properties you want to pass into the Package object
+    Parameters
+    ----------
+    filepath: Union[str, Path]
+        Can be one of the following:
+            - A path to a data file
+            - A path to a glob-like regular expression for multiple data files
+            - A package descriptor file (e.g., data-package.json) with resources
+            - A path to a package directory (either containing a data-package.json,
+            core measure data files, or input files to be transformed into core measure files)
+    id_file: Optional[str]
+        The generated ids (see `replace_id` function for usage)
+    id_column: Optional[str]
+        ID column(s) for deidentification functions (see `replace_ids` and `shift_date` functions)
+    history_path: Optional[str]
+        Directory containing all version control history of mapping files 
+        (i.e., git bare repos)
+    date_columns: Optional[str]
+        The specified date columns for `shift_dates` function 
+        (if none, will default to all date column types in df. if no date column types, then will not convert anything)
+    outdir: Optional[str]
+        Directory to write core measure package
+    is_core_measures: Optional[bool]
+        Specifies whether the input is already a core measure package. 
+        This may occur if there are the necessary files (i.e., baseline.csv and timepoints.csv) and only 
+        packaging is required. For example, there may be a separate workflow that does the transformations.
+    kwargs:
+        Any other package properties you want to pass into the Package object
     """ 
 
     def __init__(
