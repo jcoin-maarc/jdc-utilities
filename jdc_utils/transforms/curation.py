@@ -122,3 +122,43 @@ def to_lowercase_names(df):
     df.columns = [c.lower() for c in df.columns]
     return df
 
+@pf.register_dataframe_method
+def to_new_names(df,mappings,old_and_new_names=False):
+    """
+    Converts column names in the given DataFrame to new names 
+    based on predefined mappings (from jcoin core_measure frictionless schema)
+
+    Parameters
+    -----------
+    df: pandas.DataFrame
+        Input DataFrame whose column names need to be converted.
+
+    mappings: dict
+        A dictionary of old name: new name mappings used to rename columns
+    old_and_new_names: bool, optional (default=False)
+        If True, returns df with Multiindex columns where two levels
+        are old and new names
+
+    Returns
+    --------
+    pandas.DataFrame
+        DataFrame with converted column names if old_and_new_names=False
+    """
+    mappings_for_df = {
+        old:new for old,new in mappings.items() 
+        if old in df.columns}
+
+    df_output = df.copy()
+    if mappings_for_df:
+        if old_and_new_names:
+            multiindex = [
+                (old,mappings_for_df.get(old,None))
+                for old in df.columns   
+            ]
+            df_output.columns = pd.MultiIndex(multiindex,names=['oldnames','newnames'])
+        else:
+            df_output.rename(columns=mappings_for_df,inplace=True)
+    
+    return df_output
+
+

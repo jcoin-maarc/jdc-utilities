@@ -5,6 +5,7 @@ Generate and validate data package for submission by hubs
 import os
 from pathlib import Path
 from jdc_utils import schema
+from jdc_utils.transforms.curation import to_new_names
 from jdc_utils.transforms.deidentify import replace_ids,shift_dates
 from frictionless import Package,Resource
 from frictionless import transform,validate
@@ -14,6 +15,9 @@ import re
 import pandas as pd
 import copy 
 from abc import ABC,abstractmethod
+from functools import reduce 
+
+
 schemas = schema.core_measures.__dict__
 
 class CoreMeasures:
@@ -97,20 +101,20 @@ class CoreMeasures:
 
         # has data package
         # has a baseline and timepoints resource
-
+        package_pandas = Package(**kwargs)
         for resource in package.resources:
             name = resource.name
-            resource.data = resource.to_petl().todf()
-            resource.format = "pandas"
-            resource.name = name
+            data = resource.to_petl().todf()
+            resource_pandas = Resource(data,name=name)
+            package_pandas.add_resource(resource_pandas)
         
         os.chdir(pwd) #NOTE: change dir to base dir for other steps
 
         if is_core_measures:
-            self.package = package 
+            self.package = package_pandas 
             self.sync()
         else:
-            self.sourcepackage = package
+            self.sourcepackage = package_pandas
             self.package = Package(**kwargs)
         
     def to_baseline():
@@ -204,17 +208,56 @@ class CoreMeasures:
                 match = re.search(s,name)
                 if match:
                     resource['schema'] = schemas[match.group()]
-    
+
+    def _to_new_names(self):
+        fields = (
+            schema.core_measures.baseline['fields'] + 
+            schema.core_measures.timepoints['fields']
+        )
+        _mapnames = lambda x,y:{
+            **{y['custom']['jcoin:original_name']:y['name'],
+            **x}
+        }
+        mappings = reduce(_mapnames,fields,{})
+        for resource in self.package.resources:
+            sourcedf = resource.data.copy()
+            targetdf = to_new_names(df=sourcedf,mappings=mappings)
+            resource.data = targetdf
+            resource.format = "pandas"
+
+    def _add_missing_fields(self,missing_value="Missing"):
+
+
+        for resource in self.package.resources:
+            tbl = resource.to_petl()
+            fieldnames = tbl.fieldnames()
+            fields = []
+            fields_to_add = []
+            for field in resource.schema.fields:
+                fields.append(field.name)
+                if field.name not in fieldnames:
+                    fields_to_add.append((field.name, missing_value))
+
+            df = (
+                tbl
+                .addfields(fields_to_add)
+                .cut(fields)
+                .todf()
+            )
+            resource.data = df
+            resource.format = "pandas"
+
+
+
     def sync(self):
         """ 
         if a core measure package exists
         sync by adding most up to date schemas and 
         adding missing fields.
         """ 
-
+        self._to_new_names()
         self._add_schemas()
-        self.package = transform(self.package,steps=[
-                add_missing_fields(missing_value="Missing")])
+        self._add_missing_fields()
                 
     def write(self,outdir=None,**kwargs):
         """
