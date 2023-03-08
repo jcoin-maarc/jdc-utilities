@@ -1,5 +1,8 @@
 # Utilities for de-identifying data, transforming data, and validating data for JDC submissions
  
+> **CAUTION: README UNDER CONSTRUCTION**
+
+
 The JDC utilities provide tools for de-identifying, harmonizing, and validating data according to JCOIN data
 commons specifications and standards.
 
@@ -23,22 +26,22 @@ There are several options to use these jdc utilities.
 cd <folder name where you store data>
 ```
 
+Create a configuration file and initiate version control mappings:
+
 ```bash
 jdc-utils init
 ```
+
+Run the deidentification process (shift_dates and replace_ids) on the specified filepath:
 
 ```bash
 jdc-utils run
 ```
 
-
-
-
+> NOTE: need to add a path to a transform script option. 
 
 ### Use these tools directly in python scripts.
-### Use the command line interface with all the individual parameters.
-
-
+TO ADD 
 
 
 ## Workflow steps
