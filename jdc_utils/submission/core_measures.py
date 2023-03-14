@@ -66,6 +66,18 @@ class CoreMeasures:
         is_core_measures=False,
         **kwargs):
 
+        # resolve paths just in case directories change
+         # note, check that this is a directory in case the input
+         # is something else like a url that is valid input to Package
+        
+        var_list = [filepath,id_file,history_path,outdir]
+        
+        for path in range(len(var_list)):
+            if path:
+                path = Path(path)
+                if path.is_dir() or path.is_file():
+                    path = str(path.resolve())
+
         self.filepath = filepath
         self.id_file = id_file
         self.id_column = id_column
@@ -77,6 +89,7 @@ class CoreMeasures:
         self.package = None 
         self.sourcepackage = None
 
+        self.basedir = os.getcwd()
 
         pwd = os.getcwd()
         filename = self.filename 
@@ -103,10 +116,16 @@ class CoreMeasures:
         # has a baseline and timepoints resource
         package_pandas = Package(**kwargs)
         for resource in package.resources:
-            name = resource.name
-            data = resource.to_petl().todf()
-            resource_pandas = Resource(data,name=name)
-            package_pandas.add_resource(resource_pandas)
+            try:
+                name = resource.name
+                data = resource.to_petl().todf()
+                resource_pandas = Resource(data,name=name)
+                package_pandas.add_resource(resource_pandas)
+            except:
+                print(f"In {filepath}")
+                print(f"Something went wrong when loading {name}")
+                print(f"Removing {name} from the source package")
+                del resource
         
         os.chdir(pwd) #NOTE: change dir to base dir for other steps
 
@@ -164,7 +183,9 @@ class CoreMeasures:
             setattr(self,'history_path',history_path)
         if date_columns:
             setattr(self,'date_columns',date_columns)
-  
+
+        os.chdir(self.basedir)
+
         for resource in self.sourcepackage.resources:
             id_file = _getattrcopy('id_file')
             id_column = _getattrcopy('id_column')
