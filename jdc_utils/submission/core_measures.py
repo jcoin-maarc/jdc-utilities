@@ -295,7 +295,7 @@ class CoreMeasures:
         else:
             self.outdir = outdir
 
-        Path(outdir).mkdir(exist_ok=True)
+        Path(outdir).mkdir(exist_ok=True,parents=True)
         os.chdir(outdir)
         Path("schemas").mkdir(exist_ok=True)
         Path("data").mkdir(exist_ok=True)
