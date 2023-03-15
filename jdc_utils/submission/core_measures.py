@@ -68,21 +68,22 @@ class CoreMeasures:
         # resolve paths just in case directories change
          # note, check that this is a directory in case the input
          # is something else like a url that is valid input to Package
-        
-        var_list = [filepath,id_file,history_path,outdir]
-        
-        for path in range(len(var_list)):
-            if path:
-                path = Path(path)
-                if path.is_dir() or path.is_file():
-                    path = str(path.resolve())
+        # NOTE: should all be pathlike
+        def _resolve_if_path(var):
+            if var:
+                if os.path.isdir(var) or os.path.isfile(var):
+                    return str(Path(var).resolve()) 
+                else:
+                    return var
+            else:
+                return var     
 
-        self.filepath = filepath
-        self.id_file = id_file
+        self.filepath = _resolve_if_path(filepath)
+        self.id_file = _resolve_if_path(id_file)
         self.id_column = id_column
-        self.history_path = history_path
+        self.history_path = _resolve_if_path(history_path)
         self.date_columns = date_columns
-        self.outdir = outdir
+        self.outdir = _resolve_if_path(outdir)
         self.filename = Path(filepath).name
         
         self.package = None 
