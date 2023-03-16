@@ -5,10 +5,15 @@ Generate and validate data package for submission by hubs
 import os
 from pathlib import Path
 from jdc_utils import schema
+from jdc_utils.encoding import core_measures as encodings
 from jdc_utils.transforms.curation import to_new_names
 from jdc_utils.transforms.deidentify import replace_ids,shift_dates
+#frictionless
 from frictionless import Package,Resource
 from frictionless import transform,validate
+# frictionless plugins
+from dataforge.frictionless import encode_table
+import dataforge.frictionless
 from collections import abc
 import re
 import pandas as pd
@@ -268,8 +273,6 @@ class CoreMeasures:
             resource.data = df
             resource.format = "pandas"
 
-
-
     def sync(self):
         """ 
         if a core measure package exists
@@ -299,6 +302,8 @@ class CoreMeasures:
         os.chdir(outdir)
         Path("schemas").mkdir(exist_ok=True)
         Path("data").mkdir(exist_ok=True)
+
+        # write csv datasets and validation report
         for resource in self.package['resources']:
             csvpath = f"data/{resource['name']}.csv"
             schemapath = f"schemas/{resource['name']}.json"
@@ -306,12 +311,68 @@ class CoreMeasures:
             resource.schema.to_json(schemapath)
             resource.to_petl().tocsv(csvpath)
 
-            self.written_package.add_resource(Resource(path=csvpath,schema=schemapath))
+            self.written_package.add_resource(
+                Resource(name=resource['name'],path=csvpath,schema=schemapath)
+            )
         
         self.written_package.to_json(f"data-package.json")
         self.written_package_report = validate("data-package.json")
         self.written_package_report.to_json("report.json")
         Path("report-summary.txt").write_text(self.written_package_report.to_summary())
+
+
+        # write SPSS/Stata files if valid package
+        if self.written_package_report['valid']:
+            ## copy package so trgt pckgs not added to iterator
+            sourcepackage = self.written_package.to_copy()
+            for source in sourcepackage['resources']:
+                source_path = Path(source['path'])
+
+                target_spss_path = f"data/{resource['name']}.sav"
+                target_stata_path = f"data/{resource['name']}.dta"
+                target_spss_schemapath = f"schemas/{resource['name']}-sav.json"
+                target_stata_schemapath = f"schemas/{resource['name']}-dta.json"
+                
+                #TODO: test to see if instantiating new Resource is needed (may not be given the iterator is now copied)
+                target_spss = Resource(path=str(source.path),schema = dict(source.schema))
+                target_spss = target_spss.transform(steps=[encode_table(encodings=encodings.fields,
+                    reservecodes=encodings.reserve['spss'])])
+                #TODO: test to see if instantiating new Resource is needed (may not be given the iterator is now copied)
+                target_stata = Resource(path=str(source.path),schema = dict(source.schema))
+                target_stata = target_stata.transform(steps=[encode_table(encodings=encodings.fields,
+                    reservecodes=encodings.reserve['stata'])])
+                
+                target_spss.infer()
+                target_stata.infer()
+
+                target_spss.write(target_spss_path)
+                target_stata.write(target_stata_path)
+                target_spss.schema.to_json(target_spss_schemapath)
+                target_stata.schema.to_json(target_stata_schemapath)
+
+                resource_spss = Resource(
+                    name=f"{resource['name']}-sav",
+                    title="SPSS (.sav) dataset",
+                    description="This is an annotated SPSS dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
+                    path=target_spss_path,
+                    # schema=target_spss_schemapath #No validation/read stream yet (need to add to dataforge)
+                )
+                resource_stata = Resource(
+                    name=f"{resource['name']}-dta",
+                    title="Stata (.dta) dataset",
+                    description="This is an annotated Stata dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
+                    path=target_stata_path,
+                    # schema=target_stata_schemapath #No validation/read stream yet (need to add to dataforge)
+                )
+                self.written_package.add_resource(resource_spss)
+                self.written_package.add_resource(resource_stata)
+
+            self.written_package.to_json("data-package.json")
+
+
+        else:
+            print(f"Package not valid so not generating spss and stata files. Check report summary")
+
         return self
 
 
