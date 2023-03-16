@@ -1,0 +1,38 @@
+{
+  "resources": [
+    {
+      "name": "baseline",
+      "path": "data/baseline.csv",
+      "schema": "schemas/baseline.json"
+    },
+    {
+      "name": "timepoints",
+      "path": "data/timepoints.csv",
+      "schema": "schemas/timepoints.json"
+    },
+    {
+      "name": "timepoints-sav",
+      "title": "SPSS (.sav) dataset",
+      "description": "This is an annotated SPSS dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
+      "path": "data/timepoints.sav"
+    },
+    {
+      "name": "timepoints-dta",
+      "title": "Stata (.dta) dataset",
+      "description": "This is an annotated Stata dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
+      "path": "data/timepoints.dta"
+    },
+    {
+      "name": "timepoints-sav",
+      "title": "SPSS (.sav) dataset",
+      "description": "This is an annotated SPSS dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
+      "path": "data/timepoints.sav"
+    },
+    {
+      "name": "timepoints-dta",
+      "title": "Stata (.dta) dataset",
+      "description": "This is an annotated Stata dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
+      "path": "data/timepoints.dta"
+    }
+  ]
+}
