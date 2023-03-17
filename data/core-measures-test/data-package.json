@@ -11,16 +11,16 @@
       "schema": "schemas/timepoints.json"
     },
     {
-      "name": "timepoints-sav",
+      "name": "baseline-sav",
       "title": "SPSS (.sav) dataset",
       "description": "This is an annotated SPSS dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
-      "path": "data/timepoints.sav"
+      "path": "data/baseline.sav"
     },
     {
-      "name": "timepoints-dta",
+      "name": "baseline-dta",
       "title": "Stata (.dta) dataset",
       "description": "This is an annotated Stata dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
-      "path": "data/timepoints.dta"
+      "path": "data/baseline.dta"
     },
     {
       "name": "timepoints-sav",

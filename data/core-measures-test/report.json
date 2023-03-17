@@ -1,6 +1,6 @@
 {
   "version": "4.40.8",
-  "time": 0.6,
+  "time": 0.712,
   "errors": [],
   "tasks": [
     {
@@ -590,7 +590,7 @@
         },
         "encoding": "utf-8"
       },
-      "time": 0.072,
+      "time": 0.122,
       "scope": [
         "hash-count-error",
         "byte-count-error",
@@ -4095,14 +4095,14 @@
         "format": "csv",
         "hashing": "md5",
         "stats": {
-          "hash": "03050fae992f39b226b1242050d5a07c",
-          "bytes": 28828,
+          "hash": "a9d63dd94132821d576abc9786c5cea5",
+          "bytes": 27358,
           "fields": 241,
           "rows": 11
         },
         "encoding": "utf-8"
       },
-      "time": 0.392,
+      "time": 0.333,
       "scope": [
         "hash-count-error",
         "byte-count-error",
