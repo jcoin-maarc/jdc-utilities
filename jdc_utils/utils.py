@@ -214,7 +214,7 @@ def create_gen3_submission(xls_path:str,category_name_mappings:dict) -> pd.DataF
 
 
 
-def _write_to_zip(indir_path,zipobj):
+def _write_to_zip(input_path,zip_object):
     '''
     recursively writes file contents
     of a directory
@@ -222,17 +222,17 @@ def _write_to_zip(indir_path,zipobj):
 
     TODO: write directories (so can write empty dirs) without using mkdir
     '''       
-    indir_path = Path(indir_path).resolve()
-    indir_contents = indir_path.glob("*")
+    input_path = Path(input_path).resolve()
+    input_contents = input_path.glob("*")
     
-    for d in indir_contents:
+    for path in input_contents:
         #relative directory to write dir/file within zip
-        relative_path = d.relative_to(indir_path)
-        if d.is_file():
-            zipobj.write(d,relative_path)
+        relative_path = path.relative_to(input_path)
+        if path.is_file():
+            zip_object.write(path,relative_path)
         else:
-            #zipobj.mkdir(relative_dir) #ZipFile.mkdir only supported starting in python 3.11
-            _write_to_zip(d,zipobj)
+            #zip_object.mkdir(relative_dir) #ZipFile.mkdir only supported starting in python 3.11
+            _write_to_zip(path,zip_object)
 
 def zip_package(pkg_path,zip_path):
     ''' 
@@ -248,5 +248,5 @@ def zip_package(pkg_path,zip_path):
     outzip_path = (Path(zip_path).resolve()/
         pkg_path.with_suffix('.zip').name)
 
-    with ZipFile(outzip_path,'w') as pkgzip:
-        _write_to_zip(pkg_path,pkgzip)
+    with ZipFile(outzip_path,'w') as pkg_zip:
+        _write_to_zip(pkg_path,pkg_zip)
