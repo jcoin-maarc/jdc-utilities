@@ -328,10 +328,10 @@ class CoreMeasures:
             for source in sourcepackage['resources']:
                 source_path = Path(source['path'])
 
-                target_spss_path = f"data/{resource['name']}.sav"
-                target_stata_path = f"data/{resource['name']}.dta"
-                target_spss_schemapath = f"schemas/{resource['name']}-sav.json"
-                target_stata_schemapath = f"schemas/{resource['name']}-dta.json"
+                target_spss_path = f"data/{source['name']}.sav"
+                target_stata_path = f"data/{source['name']}.dta"
+                target_spss_schemapath = f"schemas/{source['name']}-sav.json"
+                target_stata_schemapath = f"schemas/{source['name']}-dta.json"
                 
                 #TODO: test to see if instantiating new Resource is needed (may not be given the iterator is now copied)
                 target_spss = Resource(path=str(source.path),schema = dict(source.schema))
@@ -350,28 +350,30 @@ class CoreMeasures:
                 target_spss.schema.to_json(target_spss_schemapath)
                 target_stata.schema.to_json(target_stata_schemapath)
 
-                resource_spss = Resource(
-                    name=f"{resource['name']}-sav",
+                target_resource_spss = Resource(
+                    name=f"{source['name']}-sav",
                     title="SPSS (.sav) dataset",
                     description="This is an annotated SPSS dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
                     path=target_spss_path,
                     # schema=target_spss_schemapath #No validation/read stream yet (need to add to dataforge)
                 )
-                resource_stata = Resource(
-                    name=f"{resource['name']}-dta",
+                target_resource_stata = Resource(
+                    name=f"{source['name']}-dta",
                     title="Stata (.dta) dataset",
                     description="This is an annotated Stata dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
                     path=target_stata_path,
                     # schema=target_stata_schemapath #No validation/read stream yet (need to add to dataforge)
                 )
-                self.written_package.add_resource(resource_spss)
-                self.written_package.add_resource(resource_stata)
+                self.written_package.add_resource(target_resource_spss)
+                self.written_package.add_resource(target_resource_stata)
 
             self.written_package.to_json("data-package.json")
 
 
         else:
             print(f"Package not valid so not generating spss and stata files. Check report summary")
+
+        os.chdir(self.basedir)
 
         return self
 
