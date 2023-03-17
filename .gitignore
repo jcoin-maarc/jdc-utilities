@@ -10,3 +10,5 @@ venv/
 NOTES.md
 
 *credentials.json
+
+notebooks/dev/core-measure-projects.yaml
