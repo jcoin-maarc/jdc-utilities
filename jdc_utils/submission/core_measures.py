@@ -6,8 +6,8 @@ import os
 from pathlib import Path
 from jdc_utils import schema
 from jdc_utils.encoding import core_measures as encodings
-from jdc_utils.transforms.curation import to_new_names
-from jdc_utils.transforms.deidentify import replace_ids,shift_dates
+from jdc_utils.transforms import to_new_names, replace_ids,shift_dates
+from jdc_utils.utils import zip_package
 #frictionless
 from frictionless import Package,Resource
 from frictionless import transform,validate
@@ -89,6 +89,7 @@ class CoreMeasures:
         self.history_path = _resolve_if_path(history_path)
         self.date_columns = date_columns
         self.outdir = _resolve_if_path(outdir)
+        self.zipdir = str(Path(self.outdir).parent) # directory to zip the output directory package
         self.filename = Path(filepath).name
         
         self.package = None 
@@ -369,7 +370,6 @@ class CoreMeasures:
 
             self.written_package.to_json("data-package.json")
 
-
         else:
             print(f"Package not valid so not generating spss and stata files. Check report summary")
 
@@ -377,7 +377,25 @@ class CoreMeasures:
 
         return self
 
+    def zip(self,zipdir=None):
+        if not zipdir:
+            zipdir = Path(self.outdir).parent
 
+        zip_package(self.outdir,zipdir)
+
+        return self
+
+
+    def _map_package_to_jdc_sheepdog(self,credentialpath=None):
+        pass 
+
+    def _upload_package_to_jdc(self,credentialpath=None):
+        pass 
+    
+    def upload_to_jdc(self,credentialpath=None):
+        #TODO: transfer prototype code to here (see notebooks/dev/upload*.ipynb)
+        #TODO: map to sheepdog and upload
+        pass 
 
 
 
