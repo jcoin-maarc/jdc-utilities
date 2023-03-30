@@ -45,3 +45,5 @@ def zip_package(pkg_path,zip_path):
 
     with ZipFile(outzip_path,'w') as pkg_zip:
         _write_to_zip(pkg_path,pkg_zip)
+
+    return outzip_path

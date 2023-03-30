@@ -6,6 +6,16 @@ import requests
 import hashlib
 import copy
 
+def import_gen3():
+    # NOTE: using the Gen3File object to get presigned url so no need for these
+    # (previously used to call directly from commons API)
+    # from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+    from gen3.file import Gen3File 
+    from gen3.index import Gen3Index
+    from gen3.submission import Gen3Submission
+    from gen3.auth import Gen3Auth
+    return Gen3File,Gen3Index,Gen3Submission,Gen3Auth
+
 class Gen3FileUpdate:
     """
     automates new file uploads and syncing
@@ -24,16 +34,18 @@ class Gen3FileUpdate:
     ):
 
         try:
-            self._import_packages()
+            Gen3File,Gen3Index,Gen3Submission,Gen3Auth = import_gen3()
         except ImportError as e:
             raise Exception("gen3 package failed to import. Try installing with `pip install gen3`") from e
 
-        self.auth = Gen3Auth(refresh_file=credentials_path)
-        index = Gen3Index(self.auth)
-        sheepdog = Gen3Submission(self.auth)
+        # instantiate gen3 SDK microservice objects 
+        self.gen3auth= Gen3Auth(refresh_file=credentials_path)
+        self.gen3index = Gen3Index(self.gen3auth)
+        self.gen3sheepdog = Gen3Submission(self.gen3auth)
+        self.gen3files = Gen3File(self.gen3auth)
 
         self.commons_bucket = commons_bucket
-        self.commons_url = self.auth.endpoint
+        self.commons_url = self.gen3auth.endpoint
         self.commons_program = program = commons_program
         self.commons_project = project = commons_project
 
@@ -41,7 +53,7 @@ class Gen3FileUpdate:
         self.authz = [default_authz]
 
         # get latest file info stored in index
-        self.latest_index = latest_index = index.get_latest_version(file_guid)
+        self.latest_index = latest_index = self.gen3index.get_latest_version(file_guid)
         self.latest_file = None  # this should always be None as it is already uploaded
         self.latest_md5sum = latest_index["hashes"]["md5"]
         self.latest_filesize = latest_index["size"]
@@ -49,7 +61,7 @@ class Gen3FileUpdate:
         self.latest_file_name = latest_index["file_name"]
 
         # get latest sheepdog record
-        self.latest_sheepdog_record = sheepdog.export_record(
+        self.latest_sheepdog_record = self.gen3sheepdog.export_record(
             program, project, sheepdog_id, "json"
         )[0]
         # get new file info TODO: expand this to remote paths
@@ -72,14 +84,9 @@ class Gen3FileUpdate:
         else:
             print("Be careful -- sheepdog and indexd have different files. Investigate further before updating")
 
-    def _import_packages(self):
-        # NOTE: using the Gen3File object to get presigned url so no need for these
-        # (previously used to call directly from commons API)
-        # from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
-        from gen3.file import Gen3File
-        from gen3.index import Gen3Index
-        from gen3.submission import Gen3Submission
-        from gen3.auth import Gen3Auth
+    def update(self):
+        self.upload_new_version()
+        self.update_sheepdog_file_node()
 
     def upload_new_version(self):
         """
@@ -95,19 +102,18 @@ class Gen3FileUpdate:
         self.new_guid = requests.get(
             f"{self.commons_url}/index/guid/mint?count=1"
         ).json()["guids"][0]
-        index = Gen3Index(self.auth)
-        new_index = index.create_new_version(
-            guid=latest_guid,
+        self.new_index = self.gen3index.create_new_version(
+            guid=self.latest_guid,
             hashes={"md5": self.new_md5sum},
             size=self.new_filesize,
             did=self.new_guid,
-            authz=authz,
+            authz=self.authz,
         )
+        assert self.new_guid == self.new_index["did"]
 
         # get presigned url to upload
-        gen3files = Gen3File(self.auth)
-        new_file_presign = gen3files.upload_file_to_guid(
-            new_guid, new_file_name, expires_in=3600
+        new_file_presign = self.gen3files.upload_file_to_guid(
+            self.new_guid, self.new_file_name, expires_in=3600
         )
         headers = {
             "Content-Type": "application/binary",
@@ -143,7 +149,7 @@ class Gen3FileUpdate:
                     "object_id": self.new_guid,
                 }
             )
-            self.new_sheepdog_submit_output = sub.submit_record(
+            self.new_sheepdog_submit_output = self.gen3sheepdog.submit_record(
                 program, project, json=self.new_sheepdog_record
             )
 

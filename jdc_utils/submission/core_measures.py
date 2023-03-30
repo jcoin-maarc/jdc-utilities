@@ -7,7 +7,7 @@ from pathlib import Path
 from jdc_utils import schema
 from jdc_utils.encoding import core_measures as encodings
 from jdc_utils.transforms import to_new_names, replace_ids,shift_dates
-from jdc_utils.utils import zip_package
+from jdc_utils.utils import zip_package,Gen3FileUpdate
 #frictionless
 from frictionless import Package,Resource
 from frictionless import transform,validate
@@ -381,21 +381,39 @@ class CoreMeasures:
         if not zipdir:
             zipdir = Path(self.outdir).parent
 
-        zip_package(self.outdir,zipdir)
+        self.zipped_package_path = zip_package(self.outdir,zipdir)
 
         return self
 
+    def submit_to_jdc(self,
+        commons_project,
+        package_path,
+        file_guid,
+        sheepdog_id,
+        credential_path="credentials.json"
 
-    def _map_package_to_jdc_sheepdog(self,credentialpath=None):
-        pass 
+        ):
+        """ 
+        uploads a zipped version of package to jdc
+        and maps variables to current jdc data model
+        """ 
+        if not hasattr(self,"zipped_package_path"):
+            self.zip()
+        
+        package_path = self.zipped_package_path
 
-    def _upload_package_to_jdc(self,credentialpath=None):
-        pass 
-    
-    def upload_to_jdc(self,credentialpath=None):
-        #TODO: transfer prototype code to here (see notebooks/dev/upload*.ipynb)
-        #TODO: map to sheepdog and upload
-        pass 
+        gen3file_update = Gen3FileUpdate(
+            #all hubs (and hence core measures) under program JCOIN
+            commons_program="JCOIN", 
+            commons_project=commons_project, 
+            # commons_bucket:configured aws bucket for JDC
+            commons_bucket="s3://jcoinprod-default-258867494168-upload", 
+            file_guid=file_guid, 
+            sheepdog_id=sheepdog_id,
+            new_file_path=package_path,
+            credentials_path=credential_path
+        )
+        self.gen3 = gen3file_update.update()
 
 
 
