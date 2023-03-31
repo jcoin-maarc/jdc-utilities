@@ -111,15 +111,18 @@ class Gen3FileUpdate:
         microservices (file storage, indexd, and sheepdog) with latest version of
         file
         """ 
-        try:
-            self.upload_new_version()
-        except Exception as e:
-            print("File upload failed see error message below:")
-            print()
-            print(e)
-            self.gen3files.delete_file_locations(self.new_guid)
+        if self.same_md5sum_latest_index_and_new_file:
+            print("File is the same as latest file in indexd so not updating")
+        else:
+            try:
+                self.upload_new_version()
+                self.update_sheepdog_file_node()
+            except Exception as e:
+                print("File upload failed see error message below:")
+                print()
+                print(e)
+                self.gen3files.delete_file_locations(self.new_guid)
 
-        self.update_sheepdog_file_node()
         return self
 
 
