@@ -19,7 +19,28 @@ def import_gen3():
 class Gen3FileUpdate:
     """
     automates new file uploads and syncing
-    between file object storage, indexd, and sheepdog
+    between file object storage, indexd, and sheepdog.
+    
+    - initiating this object WONT update anything.
+    It WILL get all information related
+    to the to-be-uploaded new file (eg local file)
+    and the latest metadata associated with that file from 
+    the gen3 commons.
+    - running the `update` method will update and sync all microservices
+        referencing the file.
+
+    Example
+    --------
+    gen3file_update = Gen3FileUpdate(
+            commons_program="FAKE", 
+            commons_project="TEST", 
+            commons_bucket="s3://not-a-real-bucket-upload", 
+            file_guid="dg.XXXX/2not2-2a2-2valid2-2guid2-2justfake2", 
+            sheepdog_id="fake22-id22-for2-demo-helloworld22",
+            new_file_path="your/local/path",
+            credentials_path="credentials.json"
+        )
+        self.gen3 = gen3file_update.update()
     """
 
     def __init__(
@@ -85,8 +106,22 @@ class Gen3FileUpdate:
             print("Be careful -- sheepdog and indexd have different files. Investigate further before updating")
 
     def update(self):
-        self.upload_new_version()
+        """ 
+        given the file guid and sheepdog id, updates and syncs all 
+        microservices (file storage, indexd, and sheepdog) with latest version of
+        file
+        """ 
+        try:
+            self.upload_new_version()
+        except Exception as e:
+            print("File upload failed see error message below:")
+            print()
+            print(e)
+            self.gen3files.delete_file_locations(self.new_guid)
+
         self.update_sheepdog_file_node()
+        return self
+
 
     def upload_new_version(self):
         """
@@ -102,6 +137,7 @@ class Gen3FileUpdate:
         self.new_guid = requests.get(
             f"{self.commons_url}/index/guid/mint?count=1"
         ).json()["guids"][0]
+
         self.new_index = self.gen3index.create_new_version(
             guid=self.latest_guid,
             hashes={"md5": self.new_md5sum},
@@ -127,32 +163,34 @@ class Gen3FileUpdate:
         self.new_file_url = (
             f"{self.commons_bucket}/{self.new_guid}/{self.new_file_name}"
         )
-        self.new_index = index.update_record(self.new_guid, urls=[self.new_file_url])
+        self.new_index = self.gen3index.update_record(
+            self.new_guid, 
+            urls=[self.new_file_url])
         return self
 
-        # map to sheepdog
-        def update_sheepdog_file_node(self):
-            """
-            Updates the latest sheepdog record with the new file
-            properties (ie GUID, file name, md5sum)
-            """
+    # map to sheepdog
+    def update_sheepdog_file_node(self):
+        """
+        Updates the latest sheepdog record with the new file
+        properties (ie GUID, file name, md5sum)
+        """
 
-            program = self.commons_program
-            project = self.commons_project
+        program = self.commons_program
+        project = self.commons_project
 
-            self.new_sheepdog_record = copy.deepcopy(self.latest_sheepdog_record)
-            self.new_sheepdog_record.update(
-                {
-                    "md5sum": self.new_md5sum,
-                    "file_size": self.new_filesize,
-                    "file_name": self.new_file_name,
-                    "object_id": self.new_guid,
-                }
-            )
-            self.new_sheepdog_submit_output = self.gen3sheepdog.submit_record(
-                program, project, json=self.new_sheepdog_record
-            )
+        self.new_sheepdog_record = copy.deepcopy(self.latest_sheepdog_record)
+        self.new_sheepdog_record.update(
+            {
+                "md5sum": self.new_md5sum,
+                "file_size": self.new_filesize,
+                "file_name": self.new_file_name,
+                "object_id": self.new_guid,
+            }
+        )
+        self.new_sheepdog_submit_output = self.gen3sheepdog.submit_record(
+            program, project, json=self.new_sheepdog_record
+        )
 
-            return self
+        return self
 
 
