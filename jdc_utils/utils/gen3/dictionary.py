@@ -35,38 +35,9 @@ class Node:
         #get just the link names
         self.link_names = [x.value for x in parse("$..name").find(self.links)]
 
-        self.schema = {}
-        for prop in ["$schema","id",'required','properties']:
-            self.schema = dictionary[prop]
+        self.schema = pa.DataFrameSchema.from_schema(dictionary)
 
-    def _validate_record(self,record):
-        try:
-            jsonschema.validate(record,self.schema)
-            return None
-        except ValidationError as e:
-            return e
 
-    def validate(self,df,index_name='submitter_id',nrows=20):
-        '''
-        validate the first n of a dataframe's records against the Node's schema.
-        '''
-        if index_name:
-            df.reset_index(index_name,inplace=True)
-        
-        report = []
-        for i,row in enumerate(df.iloc[0:nrows,:].to_dict(orient="records")):
-            error = _validate_record(row)
-            if error:
-                error = dict(error)
-                error["row_number"] = i
-                report.append(error)
-        
-        if report:
-            report["valid"] = False
-        else:
-            report["valid"] = True
-
-        self.validation_report = report
         return report
 
     def write(self,df,return_type="records"):
@@ -78,16 +49,17 @@ class Node:
         #make submitter_id index if not already index\
         index_name = "submitter_id"
 
-        if data.index.name!=self.index_name and self.index_name in data.columns:
-            data.set_index(self.index_name,inplace=True)
+        if data.index.name!=index_name and index_name in data.columns:
+            data.set_index(index_name,inplace=True)
         
+        validated_data = self.schema.validate(df)
+
         if return_type=='file':\
-            self.data.to_csv(self.type+".tsv",sep='\t')
+            return validated_data.to_csv(self.type+".tsv",sep='\t')
 
         if return_type=="records":
-            return self.data.to_dict(orient="records")
+            return validated_data.to_dict(orient="records")
         elif return_type=='tsv':
-            return self.data.to_csv(sep="\t")
+            return validated_data.to_csv(sep="\t")
         else:
             raise Exception("Need to specify one of the return types: file,records,or tsv")
-
