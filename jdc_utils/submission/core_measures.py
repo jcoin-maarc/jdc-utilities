@@ -384,8 +384,26 @@ class CoreMeasures:
         self.zipped_package_path = zip_package(self.outdir,zipdir)
 
         return self
+    
+    def map_variables_to_sheepdog(self,commons_project,credential_path):
+        """ Map core measure variables to existing sheepdog model 
+        if valid, will submit to jdc sheepdog data model. 
+        if invalid, will return object with invalid data and report"""
+        baseline_df = self.package.get_resource("baseline")
+        timepoints_df = self.package.get_resource("timepoints")
+        sheepdog_data = {**to_baseline_nodes(baseline_df),**to_time_point_nodes(timepoints_df)}
 
-    def submit_to_jdc(self,
+        for node_type,data in sheepdog_records.items():
+            node = Node("https://jcoin.datacommons.io/",node_type)
+
+            report = node.validate(data)
+            if report["valid"]:
+                node.submit(credential_path)
+            else:
+                print(node_type + " not valid check report and try again")
+                return {"data":data,"report":report}
+
+    def submit_package_to_jdc(self,
         commons_project,
         package_path,
         file_guid,
