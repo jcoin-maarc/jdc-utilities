@@ -101,10 +101,13 @@ class Gen3FileUpdate:
         self.same_md5sum_latest_index_and_sheepdog = self.latest_md5sum == sheepdog_md5sum
 
         if self.same_md5sum_latest_index_and_sheepdog and self.same_guid_latest_sheepdog_and_latest_index:
-            print("Sheepdog and indexd have same file...good to go")
+            print("The latest sheepdog and indexd have same file:GOOD")
         else:
             print("Be careful -- sheepdog and indexd have different files. Investigate further before updating")
 
+        if self.same_md5sum_latest_index_and_new_file:
+            print("The new file is the same as latest indexd file. No need to update (unless updating metadata).")
+    
     def update(self):
         """ 
         given the file guid and sheepdog id, updates and syncs all 
