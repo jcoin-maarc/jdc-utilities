@@ -109,7 +109,8 @@ class Gen3FileUpdate:
         """ 
         given the file guid and sheepdog id, updates and syncs all 
         microservices (file storage, indexd, and sheepdog) with latest version of
-        file
+        file. 
+        TODO: handling syncing/adding file manifests and metadata to metadata-service.
         """ 
         if self.same_md5sum_latest_index_and_new_file:
             print("File is the same as latest file in indexd so not updating")
