@@ -7,7 +7,8 @@ from pathlib import Path
 from jdc_utils import schema
 from jdc_utils.encoding import core_measures as encodings
 from jdc_utils.transforms import to_new_names, replace_ids,shift_dates
-from jdc_utils.utils import zip_package,Gen3FileUpdate
+from jdc_utils.transforms.sheepdog import to_baseline_nodes,to_time_point_nodes
+from jdc_utils.utils import zip_package,Gen3Node
 #frictionless
 from frictionless import Package,Resource
 from frictionless import transform,validate
@@ -89,15 +90,17 @@ class CoreMeasures:
         self.history_path = _resolve_if_path(history_path)
         self.date_columns = date_columns
         self.outdir = _resolve_if_path(outdir)
-        self.zipdir = str(Path(self.outdir).parent) # directory to zip the output directory package
+        if outdir:
+            self.zipdir = str(Path(self.outdir).parent) # directory to zip the output directory package
+        else:
+            self.zipdir = os.getcwd()
+
         self.filename = Path(filepath).name
         
         self.package = None 
         self.sourcepackage = None
 
-        self.basedir = os.getcwd()
-
-        pwd = os.getcwd()
+        self.basedir = pwd = os.getcwd()
         filename = self.filename 
         filepath = self.filepath
         print(pwd)
@@ -294,10 +297,9 @@ class CoreMeasures:
 
         self.written_package = Package(**kwargs)
 
-        if self.outdir:
+        if not outdir:
             outdir = self.outdir 
-        else:
-            self.outdir = outdir
+
 
         Path(outdir).mkdir(exist_ok=True,parents=True)
         os.chdir(outdir)
@@ -385,53 +387,19 @@ class CoreMeasures:
 
         return self
     
-    def map_variables_to_sheepdog(self,commons_project,credential_path):
-        """ Map core measure variables to existing sheepdog model 
-        if valid, will submit to jdc sheepdog data model. 
-        if invalid, will return object with invalid data and report"""
-        baseline_df = self.package.get_resource("baseline")
-        timepoints_df = self.package.get_resource("timepoints")
-        sheepdog_data = {**to_baseline_nodes(baseline_df),**to_time_point_nodes(timepoints_df)}
+def map_core_measures_to_sheepdog(baseline_df,timepoints_df,commons_project,credential_path):
+    """ Map core measure variables to existing sheepdog model 
+    if valid, will submit to jdc sheepdog data model. 
+    if invalid, will return object with invalid data and report"""
+    baseline_node_data = to_baseline_nodes(baseline_df)
+    timepoints_node_data = to_time_point_nodes(timepoints_df)
+    sheepdog_data = {**baseline_node_data,**timepoints_node_data}
 
-        for node_type,data in sheepdog_records.items():
-            node = Node("https://jcoin.datacommons.io/",node_type)
+    for node_type,data in sheepdog_data.items():
+        node = Gen3Node("https://jcoin.datacommons.io/",node_type)
+        node.submit(credential_path)
 
-            report = node.validate(data)
-            if report["valid"]:
-                node.submit(credential_path)
-            else:
-                print(node_type + " not valid check report and try again")
-                return {"data":data,"report":report}
 
-    def submit_package_to_jdc(self,
-        commons_project,
-        package_path,
-        file_guid,
-        sheepdog_id,
-        credential_path="credentials.json"
-
-        ):
-        """ 
-        uploads a zipped version of package to jdc
-        and maps variables to current jdc data model
-        """ 
-        if not hasattr(self,"zipped_package_path"):
-            self.zip()
-        
-        package_path = self.zipped_package_path
-
-        gen3file_update = Gen3FileUpdate(
-            #all hubs (and hence core measures) under program JCOIN
-            commons_program="JCOIN", 
-            commons_project=commons_project, 
-            # commons_bucket:configured aws bucket for JDC
-            commons_bucket="s3://jcoinprod-default-258867494168-upload", 
-            file_guid=file_guid, 
-            sheepdog_id=sheepdog_id,
-            new_file_path=package_path,
-            credentials_path=credential_path
-        )
-        self.gen3 = gen3file_update.update()
 
 
 
