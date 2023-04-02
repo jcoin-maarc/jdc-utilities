@@ -56,6 +56,8 @@ def to_participant_node(baseline_df):
     Takes the validated core measure baseline 
     dataset from core measure pacakge and return 
     a dataframe for participant node of JDC sheepdog data model
+
+    NOTE: role_in_project not in fricitonless core_measure_schema (added for explorer viz purposes)
     """ 
 
 
@@ -63,7 +65,7 @@ def to_participant_node(baseline_df):
     node_df = pd.DataFrame({
         "protocols.submitter_id":"main",
         "submitter_id":baseline_df.index.get_level_values("jdc_person_id"),
-        "role_in_study":baseline_df["role_in_study"],
+        "role_in_project":baseline_df["role_in_project"],
         "quarter_recruited":baseline_df["quarter_enrolled"],
         "current_client_status":baseline_df["current_study_status"]
     })

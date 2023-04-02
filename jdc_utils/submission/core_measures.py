@@ -387,7 +387,7 @@ class CoreMeasures:
 
         return self
     
-def map_core_measures_to_sheepdog(baseline_df,timepoints_df,commons_project,credential_path):
+def map_core_measures_to_sheepdog(baseline_df,timepoints_df,commons_program,commons_project,credentials_path):
     """ Map core measure variables to existing sheepdog model 
     if valid, will submit to jdc sheepdog data model. 
     if invalid, will return object with invalid data and report"""
@@ -395,9 +395,15 @@ def map_core_measures_to_sheepdog(baseline_df,timepoints_df,commons_project,cred
     timepoints_node_data = to_time_point_nodes(timepoints_df)
     sheepdog_data = {**baseline_node_data,**timepoints_node_data}
 
-    for node_type,data in sheepdog_data.items():
+    for node_type,node_df in sheepdog_data.items():
         node = Gen3Node("https://jcoin.datacommons.io/",node_type)
-        node.submit(credential_path)
+        node.submit(
+            df=node_df,
+            program=commons_program,
+            project=commons_project,
+            credentials_path=credentials_path)
+        if not node.resource.validate()["valid"]:
+            return node
 
 
 
