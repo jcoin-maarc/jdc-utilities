@@ -8,7 +8,7 @@ from jdc_utils import schema
 from jdc_utils.encoding import core_measures as encodings
 from jdc_utils.transforms import to_new_names, replace_ids,shift_dates
 from jdc_utils.transforms.sheepdog import to_baseline_nodes,to_time_point_nodes
-from jdc_utils.utils import zip_package,Gen3Node
+from jdc_utils.utils import zip_package,map_to_sheepdog
 #frictionless
 from frictionless import Package,Resource
 from frictionless import transform,validate
@@ -297,8 +297,11 @@ class CoreMeasures:
 
         self.written_package = Package(**kwargs)
 
-        if not outdir:
-            outdir = self.outdir 
+        if outdir:
+            self.outdir = outdir 
+        else:
+            outdir = self.outdir
+            
 
 
         Path(outdir).mkdir(exist_ok=True,parents=True)
@@ -379,34 +382,50 @@ class CoreMeasures:
 
         return self
 
-    def zip(self,zipdir=None):
+    def zip(self,pkg_path=None,zipdir=None):
         if not zipdir:
             zipdir = Path(self.outdir).parent
+
+        if not pkg_path:
+            pkg_path = self.outdir
 
         self.zipped_package_path = zip_package(self.outdir,zipdir)
 
         return self
     
-def map_core_measures_to_sheepdog(baseline_df,timepoints_df,commons_program,commons_project,credentials_path):
-    """ Map core measure variables to existing sheepdog model 
-    if valid, will submit to jdc sheepdog data model. 
-    if invalid, will return object with invalid data and report"""
+def map_core_measures_to_sheepdog(
+    baseline_df,timepoints_df,program,project,credentials_path,
+    node_list=None,delete_first=True
+):
+    """
+    Map core measure variables to existing sheepdog model
+
+    baseline_df: pandas dataframe of logical representation (ie True/False boolean instead of Yes/No; all missing values are NA) of  validated core measure package 
+     NOTE: the `current_project_status` column MUST be added as it is not a part of the core measures currently.
+    timepoints_df: same as baseline_df but for the time points dataset
+    staff_df: TODO: NOT YET ADDED
+    program: see map_to_sheepdog
+    project: see map_to_sheepdog
+    credentials_path: see map_to_sheepdog
+    node_list: see map_to_sheepdog
+    delete_first: see map_to_sheepdog
+    """
+
+    endpoint = "https://jcoin.datacommons.io/"
+
     baseline_node_data = to_baseline_nodes(baseline_df)
     timepoints_node_data = to_time_point_nodes(timepoints_df)
     sheepdog_data = {**baseline_node_data,**timepoints_node_data}
 
-    for node_type,node_df in sheepdog_data.items():
-        node = Gen3Node("https://jcoin.datacommons.io/",node_type)
-        node.submit(
-            df=node_df,
-            program=commons_program,
-            project=commons_project,
-            credentials_path=credentials_path)
-        if not node.resource.validate()["valid"]:
-            return node
-
-
-
+    map_to_sheepdog(
+        sheepdog_dfs=sheepdog_data,
+        endpoint=endpoint,
+        program=program,
+        project=project,
+        credentials_path=credentials_path,
+        node_list=node_list,
+        delete_first=delete_first
+    )
 
 
         
