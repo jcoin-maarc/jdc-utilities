@@ -192,7 +192,7 @@ class Gen3Node:
             project=project, 
             node_type=self.type,
             fileformat="json",
-            filename=f"{self.type}.json")
+            filename=f"tmp/sheepdog/{self.type}.json")
         sheepdog.delete_node(program, project, self.type)
         
 
