@@ -6,7 +6,8 @@ def submit_package_to_jdc(
     commons_project,
     file_guid,
     sheepdog_id,
-    credential_path="credentials.json"
+    credential_path="credentials.json",
+    submission_type="upload"
 
     ):
     """ 
@@ -28,7 +29,15 @@ def submit_package_to_jdc(
         new_file_path=package_path,
         credentials_path=credential_path
     )
-    return gen3file_update.update()
+    
+    assert submission_type in ["update","create"]
+    if submission_type=="update":
+        assert file_guid and sheepdog_id,"Need both a file guid and sheep dog id for an update"
+        output = gen3file_update.update()
+    elif submission_type=="create"
+        output = gen3file_update.upload_new_record()
+    
+    return output
 
 
 
