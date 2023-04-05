@@ -10,7 +10,7 @@ from pathlib import Path
 # all registered functions should transforms df inplace or have capability of inplace
 # if making an inplace option to registered functions, make inplace=True as default.
 @pf.register_dataframe_method
-def to_quarter(df, from_date_name_to_quarter_name):
+def to_quarter(df, from_date_name_to_quarter_name,inplace=True):
     """
     adds a quarter column by converting a date-like column
     into a quarter
@@ -18,7 +18,10 @@ def to_quarter(df, from_date_name_to_quarter_name):
     for from_date_name, to_quarter_name in from_date_name_to_quarter_name.items():
         var = pd.to_datetime(df[from_date_name])
         quarters = pd.PeriodIndex(var, freq="Q")
-        df[to_quarter_name] = quarters
+        if inplace:
+            df[to_quarter_name] = quarters
+        else:
+            return quarters
     # return quarters
 
 
