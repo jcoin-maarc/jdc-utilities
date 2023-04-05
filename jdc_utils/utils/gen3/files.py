@@ -74,18 +74,19 @@ class Gen3FileUpdate:
         self.authz = [default_authz]
 
         # get latest file info stored in index
-        self.latest_index = latest_index = self.gen3index.get_latest_version(file_guid)
-        self.latest_file = None  # this should always be None as it is already uploaded
-        self.latest_md5sum = latest_index["hashes"]["md5"]
-        self.latest_filesize = latest_index["size"]
-        self.latest_guid = latest_index["did"]
-        self.latest_file_name = latest_index["file_name"]
-
-        # get latest sheepdog record
-        self.latest_sheepdog_record = self.gen3sheepdog.export_record(
-            program, project, sheepdog_id, "json"
-        )[0]
-        # get new file info TODO: expand this to remote paths
+        if file_guid:
+            self.latest_index = latest_index = self.gen3index.get_latest_version(file_guid)
+            self.latest_file = None  # this should always be None as it is already uploaded
+            self.latest_md5sum = latest_index["hashes"]["md5"]
+            self.latest_filesize = latest_index["size"]
+            self.latest_guid = latest_index["did"]
+            self.latest_file_name = latest_index["file_name"]
+        if sheepdog_id:
+            # get latest sheepdog record
+            self.latest_sheepdog_record = self.gen3sheepdog.export_record(
+                program, project, sheepdog_id, "json"
+            )[0]
+            # get new file info TODO: expand this to remote paths
         with open(new_file_path, "rb") as f:
             self.new_file = f.read()
         self.new_md5sum = hashlib.md5(self.new_file).hexdigest()
@@ -93,20 +94,32 @@ class Gen3FileUpdate:
         self.new_file_name = Path(new_file_path).name
 
         # checks to make sure three services/file metadata locations are in sync
-        self.latest_sheepdog_guid = sheepdog_guid = self.latest_sheepdog_record['object_id']
-        self.latest_sheepdog_md5sum = sheepdog_md5sum = self.latest_sheepdog_record['md5sum']
-        self.same_guid_latest_sheepdog_and_latest_index = sheepdog_guid == self.latest_guid
-        self.same_md5sum_latest_sheepdog_and_new_file = sheepdog_md5sum == self.latest_md5sum
-        self.same_md5sum_latest_index_and_new_file = self.latest_md5sum == self.new_md5sum
-        self.same_md5sum_latest_index_and_sheepdog = self.latest_md5sum == sheepdog_md5sum
+        if sheepdog_id:
+            self.latest_sheepdog_guid = sheepdog_guid = self.latest_sheepdog_record['object_id']
+            self.latest_sheepdog_md5sum = sheepdog_md5sum = self.latest_sheepdog_record['md5sum']
 
-        if self.same_md5sum_latest_index_and_sheepdog and self.same_guid_latest_sheepdog_and_latest_index:
-            print("The latest sheepdog and indexd have same file:GOOD")
-        else:
-            print("Be careful -- sheepdog and indexd have different files. Investigate further before updating")
+        if sheepdog_id and file_guid:
+            self.same_guid_latest_sheepdog_and_latest_index = sheepdog_guid == self.latest_guid
+            self.same_md5sum_latest_sheepdog_and_new_file = sheepdog_md5sum == self.latest_md5sum
+            self.same_md5sum_latest_index_and_sheepdog = self.latest_md5sum == sheepdog_md5sum
+            if self.same_md5sum_latest_index_and_sheepdog and self.same_guid_latest_sheepdog_and_latest_index:
+                print("The latest sheepdog and indexd have same file:GOOD")
+            else:
+                print("Be careful -- sheepdog and indexd have different files. Investigate further before updating")
 
-        if self.same_md5sum_latest_index_and_new_file:
-            print("The new file is the same as latest indexd file. No need to update (unless updating metadata).")
+        if file_guid:
+            self.same_md5sum_latest_index_and_new_file = self.latest_md5sum == self.new_md5sum
+
+
+            if self.same_md5sum_latest_index_and_new_file:
+                print("The new file is the same as latest indexd file. No need to update (unless updating metadata).")
+        
+
+        if not sheepdog_id:
+            print("No sheepdog id -- need to create a new sheepdog record that points to a file?")
+        
+        if not file_guid:
+            print("No indexd guid specified -- need to upload a new record/file?")
     
     def update(self):
         """ 
@@ -129,6 +142,31 @@ class Gen3FileUpdate:
 
         return self
 
+    def upload_new_record(self):
+        """
+        while upload_new_version assumes there is a current file assigned to a guid with
+        an associated baseid, if one wants to upload an unmapped file (eg new file),
+        this function uploads to initate a new reocrd for this file's storage and indexd.
+        """ 
+
+        program = self.commons_program
+        project = self.commons_project
+        # update new record more index metadata
+        # TODO: add version string
+
+        self.new_guid = requests.get(
+            f"{self.commons_url}/index/guid/mint?count=1"
+        ).json()["guids"][0]
+
+        self.gen3index.create_record(
+            hashes={"md5": self.new_md5sum},
+            file_name=self.new_file_name,
+            size=self.new_filesize,
+            did=self.new_guid,
+            authz=self.authz
+        
+        )
+        self.upload_to_file_storage()
 
     def upload_new_version(self):
         """
@@ -148,12 +186,16 @@ class Gen3FileUpdate:
         self.new_index = self.gen3index.create_new_version(
             guid=self.latest_guid,
             hashes={"md5": self.new_md5sum},
+            file_name=self.new_file_name,
             size=self.new_filesize,
             did=self.new_guid,
             authz=self.authz,
         )
         assert self.new_guid == self.new_index["did"]
+        self.upload_to_file_storage()
+        return self
 
+    def upload_to_file_storage(self):
         # get presigned url to upload
         new_file_presign = self.gen3files.upload_file_to_guid(
             self.new_guid, self.new_file_name, expires_in=3600
