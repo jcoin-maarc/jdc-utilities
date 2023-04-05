@@ -211,9 +211,8 @@ class CoreMeasures:
                     )
             if "shift_dates" in fxns:
                 if "replace_ids" in fxns:
-                    id_column = pd.read_csv(self.id_file).squeeze().name 
-                else:
-                    id_column = _getattrcopy('id_column',id_column)
+                    id_column = pd.read_csv(self.id_file).squeeze().name
+
                 sourcedf = shift_dates(sourcedf,
                         id_column=id_column,
                         date_columns=date_columns,
