@@ -6,7 +6,7 @@ import requests
 import hashlib
 import copy
 import requests
-
+import json
 def import_gen3():
     # NOTE: using the Gen3File object to get presigned url so no need for these
     # (previously used to call directly from commons API)
@@ -105,6 +105,7 @@ class Gen3FileUpdate:
                 self.latest_index = None
         else:
             print("No file guid specified -- needed for updating records")
+            self.latest_index = None
         # get sheepdog record
         if sheepdog_id or sheepdog_file_submitter_id:
             self.get_sheepdog_file_record(
@@ -179,22 +180,23 @@ class Gen3FileUpdate:
         Metadata is optional as well but highly recommended (to make the file findable)
 
         """
-
+        is_no_record = not self.latest_index and not self.latest_sheepdog_record
+        assert is_no_record,"There is a sheepdog and indexd record that already exists"
         try:
             self.upload_new_file()
             self.create_sheepdog_file_record(
-                file_node_submitter_id=None,
-                cmc_node_submitter_id=None,
-                data_category=None,
-                data_format=None,
-                data_type=None,
-                other_file_node_metadata=None,
-                other_cmc_node_metadata=None
+                file_node_submitter_id=file_node_submitter_id,
+                cmc_node_submitter_id=cmc_node_submitter_id,
+                data_category=data_category,
+                data_format=data_format,
+                data_type=data_type,
+                other_file_node_metadata=other_file_node_metadata,
+                other_cmc_node_metadata=other_cmc_node_metadata
             )
-        except Exception as e:
+        except requests.exceptions.HTTPError as e:
             print("File upload failed see error message below:")
             print()
-            print(e)
+            print(json.dumps(e.response.json(),indent=4))
             self.gen3files.delete_file_locations(self.new_guid)
 
     def upload_new_file(self):
@@ -339,7 +341,7 @@ class Gen3FileUpdate:
         assert hasattr(self,'new_index'),"Need to create a new indexd record with new file. Use "
 
         if not file_node_submitter_id:
-            file_node_submitter_id = Path(self.file_name).stem
+            file_node_submitter_id = Path(self.new_file_name).stem
         
         if not cmc_node_submitter_id:
             cmc_node_submitter_id = file_node_submitter_id
@@ -353,9 +355,6 @@ class Gen3FileUpdate:
         self.new_sheepdog_record = {
             'project_id': f'{program}-{project}',
             'submitter_id': file_node_submitter_id,
-            'data_category': data_category,
-            'data_format': data_format,
-            'data_type': data_type,
             'file_name': self.new_file_name,
             'file_size':self.new_filesize,
             'md5sum':self.new_md5sum,
@@ -367,11 +366,20 @@ class Gen3FileUpdate:
                 "project_id":f"{program}-{project}",
                 'submitter_id': cmc_node_submitter_id,
                 "type":"core_metadata_collection",
-                "projects":{"code":project},
+                "projects":[{"code":project}],
                 **other_cmc_node_metadata
                 }
             ],
             'type': 'reference_file'}
+
+        if data_category:
+            self.new_sheepdog_record["data_category"] = data_category
+        
+        if data_type:
+            self.new_sheepdog_record['data_type'] = data_type 
+
+        if data_format:
+            self.new_sheepdog_record['data_format'] = data_format
 
         self.new_sheepdog_submit_output = self.gen3sheepdog.submit_record(
             program, project, json=self.new_sheepdog_record
