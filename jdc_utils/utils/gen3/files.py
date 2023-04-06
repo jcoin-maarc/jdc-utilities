@@ -5,6 +5,7 @@ from pathlib import Path
 import requests
 import hashlib
 import copy
+import requests
 
 def import_gen3():
     # NOTE: using the Gen3File object to get presigned url so no need for these
@@ -28,6 +29,12 @@ class Gen3FileUpdate:
     the gen3 commons.
     - running the `update` method will update and sync all microservices
         referencing the file.
+    - running the `create` method will create an entirely new record. This is intended 
+        to run only once for a given file.
+    
+    TODO: 1. metadata-service functionality 2. making updates to only metadata for a given set
+     of records.
+     TODO: replace SDK calls with calls directly to API?
 
     Example
     --------
@@ -48,10 +55,12 @@ class Gen3FileUpdate:
         commons_program,
         commons_project,
         commons_bucket,
-        file_guid,
-        sheepdog_id,
         new_file_path,
+        file_guid=None,
+        sheepdog_id=None,
+        sheepdog_file_submitter_id=None,
         credentials_path="credentials.json",
+
     ):
 
         try:
@@ -72,33 +81,47 @@ class Gen3FileUpdate:
 
         default_authz = "/programs/{}/projects/{}".format(program, project)
         self.authz = [default_authz]
-
-        # get latest file info stored in index
-        if file_guid:
-            self.latest_index = latest_index = self.gen3index.get_latest_version(file_guid)
-            self.latest_file = None  # this should always be None as it is already uploaded
-            self.latest_md5sum = latest_index["hashes"]["md5"]
-            self.latest_filesize = latest_index["size"]
-            self.latest_guid = latest_index["did"]
-            self.latest_file_name = latest_index["file_name"]
-        if sheepdog_id:
-            # get latest sheepdog record
-            self.latest_sheepdog_record = self.gen3sheepdog.export_record(
-                program, project, sheepdog_id, "json"
-            )[0]
-            # get new file info TODO: expand this to remote paths
+        
+        # read in file and get the new file info
+        # get new file info TODO: expand this to remote paths
         with open(new_file_path, "rb") as f:
             self.new_file = f.read()
         self.new_md5sum = hashlib.md5(self.new_file).hexdigest()
         self.new_filesize = os.path.getsize(new_file_path)
         self.new_file_name = Path(new_file_path).name
 
-        # checks to make sure three services/file metadata locations are in sync
-        if sheepdog_id:
-            self.latest_sheepdog_guid = sheepdog_guid = self.latest_sheepdog_record['object_id']
-            self.latest_sheepdog_md5sum = sheepdog_md5sum = self.latest_sheepdog_record['md5sum']
+        # get latest file info stored in indexd
+        if file_guid:
+            try:
+                self.latest_index = latest_index = self.gen3index.get_latest_version(file_guid)
+                self.latest_file = None  # this should always be None as it is already uploaded
+                self.latest_md5sum = latest_index["hashes"]["md5"]
+                self.latest_filesize = latest_index["size"]
+                self.latest_guid = latest_index["did"]
+                self.latest_file_name = latest_index["file_name"]
+                self.same_md5sum_latest_index_and_new_file = self.latest_md5sum == self.new_md5sum
+            except:
+                print("Could not get latest indexd record")
+                self.latest_index = None
+        else:
+            print("No file guid specified -- needed for updating records")
+        # get sheepdog record
+        if sheepdog_id or sheepdog_file_submitter_id:
+            self.get_sheepdog_file_record(
+                program, 
+                project,
+                sheepdog_id,
+                sheepdog_file_submitter_id)
+            if self.latest_sheepdog_record:
+                self.latest_sheepdog_guid = sheepdog_guid = self.latest_sheepdog_record['object_id']
+                self.latest_sheepdog_md5sum = sheepdog_md5sum = self.latest_sheepdog_record['md5sum']   
+        else:
+            print("No sheepdog id/submitter id specified")
+        
 
-        if sheepdog_id and file_guid:
+        # checks to make sure three services/file metadata locations are in sync
+
+        if self.latest_sheepdog_record and self.latest_index:
             self.same_guid_latest_sheepdog_and_latest_index = sheepdog_guid == self.latest_guid
             self.same_md5sum_latest_sheepdog_and_new_file = sheepdog_md5sum == self.latest_md5sum
             self.same_md5sum_latest_index_and_sheepdog = self.latest_md5sum == sheepdog_md5sum
@@ -107,27 +130,24 @@ class Gen3FileUpdate:
             else:
                 print("Be careful -- sheepdog and indexd have different files. Investigate further before updating")
 
-        if file_guid:
-            self.same_md5sum_latest_index_and_new_file = self.latest_md5sum == self.new_md5sum
-
-
+        if self.latest_index:
             if self.same_md5sum_latest_index_and_new_file:
                 print("The new file is the same as latest indexd file. No need to update (unless updating metadata).")
-        
-
-        if not sheepdog_id:
-            print("No sheepdog id -- need to create a new sheepdog record that points to a file?")
-        
-        if not file_guid:
-            print("No indexd guid specified -- need to upload a new record/file?")
+        else:
+            print("No indexd guid specified or record found-- need to upload a new record/file? use the .create method")
     
     def update(self):
         """ 
+        Updates an existing file record with a new version of file attached to 
+        a generated unique id (GUID;object id)
+        
+        
         given the file guid and sheepdog id, updates and syncs all 
         microservices (file storage, indexd, and sheepdog) with latest version of
         file. 
         TODO: handling syncing/adding file manifests and metadata to metadata-service.
         """ 
+
         if self.same_md5sum_latest_index_and_new_file:
             print("File is the same as latest file in indexd so not updating")
         else:
@@ -141,9 +161,46 @@ class Gen3FileUpdate:
                 self.gen3files.delete_file_locations(self.new_guid)
 
         return self
+    
+    def create(
+        self,
+        file_node_submitter_id=None,
+        cmc_node_submitter_id=None,
+        data_category=None,
+        data_format=None,
+        data_type=None,
+        other_file_node_metadata=None,
+        other_cmc_node_metadata=None):
 
-    def upload_new_record(self):
+        """ Create a new set of records for
+        given file in gen3 microservices
+
+        If no submitter ids specified, will default to file name stem.
+        Metadata is optional as well but highly recommended (to make the file findable)
+
         """
+
+        try:
+            self.upload_new_file()
+            self.create_sheepdog_file_record(
+                file_node_submitter_id=None,
+                cmc_node_submitter_id=None,
+                data_category=None,
+                data_format=None,
+                data_type=None,
+                other_file_node_metadata=None,
+                other_cmc_node_metadata=None
+            )
+        except Exception as e:
+            print("File upload failed see error message below:")
+            print()
+            print(e)
+            self.gen3files.delete_file_locations(self.new_guid)
+
+    def upload_new_file(self):
+        """
+        Upload and map a new file without existing file in storage location/indexd record
+        
         while upload_new_version assumes there is a current file assigned to a guid with
         an associated baseid, if one wants to upload an unmapped file (eg new file),
         this function uploads to initate a new reocrd for this file's storage and indexd.
@@ -217,10 +274,114 @@ class Gen3FileUpdate:
             urls=[self.new_file_url])
         return self
 
-    # map to sheepdog
-    def update_sheepdog_file_node(self):
+    def get_sheepdog_file_record(self,program,project,
+        sheepdog_id=None,sheepdog_file_submitter_id=None):
+        """ 
+        get a sheepdog file node record based on either a uuid 
+        or submitter id
+
+        TODO: instead of exporting entire node, directly query
+        (functionality not in SDK so use API)
         """
-        Updates the latest sheepdog record with the new file
+        try:
+            if sheepdog_id:
+                # get latest sheepdog record
+                self.latest_sheepdog_record = self.gen3sheepdog.export_record(
+                    program, project, sheepdog_id, "json"
+                )[0]
+            elif sheepdog_file_submitter_id:
+                node_records = self.gen3sheepdog.export_node(
+                    program=program,
+                    project=project,
+                    node_type="reference_file",
+                    fileformat="json")
+                
+                node_record = [
+                    record for record in node_records["data"] 
+                    if record["submitter_id"]==sheepdog_file_submitter_id
+                ]
+                
+                if node_record:
+                    self.latest_sheepdog_record = node_record[0]
+                else:
+                    self.latest_sheepdog_record = None
+                    
+        except request.exception.HTTPError:
+            print("Could not get latest sheepdog record")
+            self.latest_sheepdog_record = None
+            return self
+
+    # map to sheepdog
+    def create_sheepdog_file_record(self,
+        file_node_submitter_id=None,
+        cmc_node_submitter_id=None,
+        data_category=None,
+        data_format=None,
+        data_type=None,
+        other_file_node_metadata=None,
+        other_cmc_node_metadata=None):
+        """ 
+        Creates a new sheepdog 
+        record from a new indexd record
+
+        If the provided core_metadata collection node submitter id (`cmc_node_submitter_id`)
+        exists (but not the reference file submitter id), will add the reference file record
+        to the existing reference file node.
+
+        If both nodes' submitter ids exist, will simply update the current records. 
+
+        If no submitter ids specified, will use the file name stem. 
+        """ 
+
+        program = self.commons_program
+        project = self.commons_project
+
+        assert hasattr(self,'new_index'),"Need to create a new indexd record with new file. Use "
+
+        if not file_node_submitter_id:
+            file_node_submitter_id = Path(self.file_name).stem
+        
+        if not cmc_node_submitter_id:
+            cmc_node_submitter_id = file_node_submitter_id
+        
+        if not other_file_node_metadata:
+            other_file_node_metadata = {}
+        
+        if not other_cmc_node_metadata:
+            other_cmc_node_metadata = {}
+
+        self.new_sheepdog_record = {
+            'project_id': f'{program}-{project}',
+            'submitter_id': file_node_submitter_id,
+            'data_category': data_category,
+            'data_format': data_format,
+            'data_type': data_type,
+            'file_name': self.new_file_name,
+            'file_size':self.new_filesize,
+            'md5sum':self.new_md5sum,
+            "object_id": self.new_guid,
+            
+            **other_file_node_metadata,
+            'core_metadata_collections': [
+                {
+                "project_id":f"{program}-{project}",
+                'submitter_id': cmc_node_submitter_id,
+                "type":"core_metadata_collection",
+                "projects":{"code":project},
+                **other_cmc_node_metadata
+                }
+            ],
+            'type': 'reference_file'}
+
+        self.new_sheepdog_submit_output = self.gen3sheepdog.submit_record(
+            program, project, json=self.new_sheepdog_record
+        )
+
+        return self
+
+    def update_sheepdog_file_record(self):
+        """
+        Updates the latest (existing) sheepdog record with the new file
         properties (ie GUID, file name, md5sum)
         """
 

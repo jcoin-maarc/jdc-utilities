@@ -381,17 +381,42 @@ class CoreMeasures:
 
         return self
 
-    def zip(self,pkg_path=None,zipdir=None):
+    def zip(self,pkgpath=None,zipdir=None):
         if not zipdir:
             zipdir = Path(self.outdir).parent
 
-        if not pkg_path:
-            pkg_path = self.outdir
+        if not pkgpath:
+            pkgpath = self.outdir
 
-        self.zipped_package_path = zip_package(self.outdir,zipdir)
+        self.zipped_package_path = zip_package(pkgpath,zipdir)
 
         return self
-    
+
+
+    # def submit(
+    #     self,
+    #     program,
+    #     project,
+    #     credentials_path,
+    #     pkg_path=None,
+    #     zipdir=None,
+    #     jdc_params=None
+
+    # ):
+    # """submission and mapping to sheepdog and file upload"""
+    # 
+    #     self.zip(pkg_path,zipdir)
+
+    #     pkg = Package(Path(pkg_path)/"data-package.json")
+    #     submit_to_jdc(**jdc_params)
+    #     map_core_measures_to_sheepdog(
+    #         baseline_df, 
+    #         timepoints_df, 
+    #         program, 
+    #         project, 
+    #         credentials_path
+    #     )
+
 def map_core_measures_to_sheepdog(
     baseline_df,timepoints_df,program,project,credentials_path,
     node_list=None,delete_first=True
