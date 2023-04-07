@@ -8,7 +8,7 @@ setup(
     author='Michael Kranz,Phil Schumm',
     author_email='kranz-michael@norc.org,pschumm@uchicago.edu',
     description='Utilities for preparing and submitting data to the JDC',
-    url='https://rcg.bsd.uchicago.edu/gitlab/maarc/dasc/jdc-utilities',
+    url='https://github.com/jcoin-maarc/jdc-utilities',
     packages=find_namespace_packages(where='.'),
     install_requires=requirements,
     entry_points='''
