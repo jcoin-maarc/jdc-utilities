@@ -18,7 +18,7 @@ def submit_package_to_jdc(
     uploads a file (eg zipped core measure data package)
     and maps variables to current jdc data model (either new or existing files)
 
-    TODO: allow updates just to metadata
+    TODO: allow updates just to metadata, add metadata-service sync functionality
 
     submission_type of "create" is for first time file uploads (need to add accompanying metadata -- 
      see `Gen3FileUpdate.create_sheepdog_file_record` docs for details)
@@ -46,7 +46,7 @@ def submit_package_to_jdc(
     
     assert submission_type in ["update","create"]
     if submission_type=="update":
-        has_sheepdog = sheepdog_id or sheepdog_submitter_id
+        has_sheepdog = sheepdog_id or sheepdog_file_submitter_id
         assert file_guid and has_sheepdog,"Need both a file guid and sheep dog id for an update"
         output = gen3file_update.update()
     elif submission_type=="create":
@@ -63,7 +63,7 @@ def submit_package_to_jdc(
             data_type=sheepdog_data_type,
         )
     
-    return output
+    return gen3file_update
 
 
 

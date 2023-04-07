@@ -34,7 +34,10 @@ class Gen3FileUpdate:
     
     TODO: 1. metadata-service functionality 2. making updates to only metadata for a given set
      of records.
-     TODO: replace SDK calls with calls directly to API?
+    TODO: replace SDK calls with calls directly to API?
+    TODO: method to write metadata records to a file for easier reference 
+    TODO: read function to read metadata records from said file (allows easier additions of metadata)
+     --- make mapping or compataibility with fricitonless datapackage?
 
     Example
     --------
@@ -381,6 +384,12 @@ class Gen3FileUpdate:
         if data_format:
             self.new_sheepdog_record['data_format'] = data_format
 
+
+        # upload parent node (core metadata collection) and then child node (reference_file) with 
+         # link to parent node
+        self.gen3sheepdog.submit_record(
+                    program, project, json=self.new_sheepdog_record['core_metadata_collections']
+                )
         self.new_sheepdog_submit_output = self.gen3sheepdog.submit_record(
             program, project, json=self.new_sheepdog_record
         )
