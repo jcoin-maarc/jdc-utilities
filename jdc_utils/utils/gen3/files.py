@@ -38,6 +38,7 @@ class Gen3FileUpdate:
     TODO: method to write metadata records to a file for easier reference 
     TODO: read function to read metadata records from said file (allows easier additions of metadata)
      --- make mapping or compataibility with fricitonless datapackage?
+    TODO: make __repr__ or __str__ print the various records and properties
 
     Example
     --------
@@ -119,6 +120,8 @@ class Gen3FileUpdate:
             if self.latest_sheepdog_record:
                 self.latest_sheepdog_guid = sheepdog_guid = self.latest_sheepdog_record['object_id']
                 self.latest_sheepdog_md5sum = sheepdog_md5sum = self.latest_sheepdog_record['md5sum']   
+            else:
+                print("No sheepdog record with the given sheepdog id or submitter id")
         else:
             print("No sheepdog id/submitter id specified")
         
@@ -157,8 +160,10 @@ class Gen3FileUpdate:
         else:
             try:
                 self.upload_new_version()
-                self.update_sheepdog_file_node()
-            except Exception as e:
+                self.update_sheepdog_file_record()
+                #TODO: embed exception into each of the above fxns for specificity
+                 # delete file locations in upload new version; reload latest sheepdog rec in 2nd fxn
+            except Exception as e: 
                 print("File upload failed see error message below:")
                 print()
                 print(e)
@@ -307,6 +312,7 @@ class Gen3FileUpdate:
                 ]
                 
                 if node_record:
+                    assert len(node_record)==1
                     self.latest_sheepdog_record = node_record[0]
                 else:
                     self.latest_sheepdog_record = None
@@ -404,7 +410,7 @@ class Gen3FileUpdate:
 
         program = self.commons_program
         project = self.commons_project
-
+        assert self.latest_sheepdog_record,"No sheepdog record -- check to make sure you entered the correct submitter_id or sheepdog_id (ie node_id)"
         self.new_sheepdog_record = copy.deepcopy(self.latest_sheepdog_record)
         self.new_sheepdog_record.update(
             {
