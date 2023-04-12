@@ -10,16 +10,6 @@ import json
 
 MAX_RETRIES = 4
 def import_gen3():
-    # NOTE: using the Gen3File object to get presigned url so no need for these
-    # (previously used to call directly from commons API)
-    # from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
-    from gen3.file import Gen3File 
-    from gen3.index import Gen3Index
-    from gen3.submission import Gen3Submission
-    from gen3.auth import Gen3Auth
-
-    from gen3 import Gen3Error
-
 
     class Gen3SubmissionModified(Gen3Submission):
         """ 
@@ -78,9 +68,23 @@ def import_gen3():
                     )
 
         def submit_records(self,program,project,json,chunk_size=30):
+            """ 
+            wrapper convenience function for submitting multiple records
+            """ 
+            assert isinstance(json,list), "Input must be an array (list) of records (didcts)"
             self.submit_record(program,project,json,chunk_size)
 
-        return Gen3File,Gen3Index,Gen3SubmissionWithChunks,Gen3Auth
+    # NOTE: using the Gen3File object to get presigned url so no need for these
+    # (previously used to call directly from commons API)
+    # from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+    from gen3.file import Gen3File 
+    from gen3.index import Gen3Index
+    from gen3.submission import Gen3Submission
+    from gen3.auth import Gen3Auth
+
+    from gen3 import Gen3Error
+
+    return Gen3File,Gen3Index,Gen3SubmissionModified,Gen3Auth
 
 class Gen3FileUpdate:
     """
