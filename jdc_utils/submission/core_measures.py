@@ -22,6 +22,8 @@ import copy
 from abc import ABC,abstractmethod
 from functools import reduce 
 
+import time 
+import datetime
 
 schemas = schema.core_measures.__dict__
 
@@ -393,29 +395,85 @@ class CoreMeasures:
         return self
 
 
-    # def submit(
-    #     self,
-    #     program,
-    #     project,
-    #     credentials_path,
-    #     pkg_path=None,
-    #     zipdir=None,
-    #     jdc_params=None
+    def submit(
+        self,
+        project_code,
+        file_guid,
+        sheepdog_file_submitter_id,
+        credentials_path="credentials.json"
 
-    # ):
-    # """submission and mapping to sheepdog and file upload"""
-    # 
-    #     self.zip(pkg_path,zipdir)
+    ):
+        """
+        submission and mapping to sheepdog and file upload
 
-    #     pkg = Package(Path(pkg_path)/"data-package.json")
-    #     submit_to_jdc(**jdc_params)
-    #     map_core_measures_to_sheepdog(
-    #         baseline_df, 
-    #         timepoints_df, 
-    #         program, 
-    #         project, 
-    #         credentials_path
-    #     )
+        Note, this function assumes there exists a record already in the 
+        commons for this particular hub's core measure data package.
+        
+        If this is a first time upload, please upload with gen3 client 
+        and map via gui or use following function:
+
+        ```python
+        gen3_file = submit_package_to_jdc(
+            package_path=zip_path,
+            commons_project=commons_project,
+            sheepdog_file_submitter_id=sheepdog_file_submitter_id,
+            sheepdog_data_type="Interview",
+            sheepdog_data_category="Core Measures",
+            sheepdog_data_format="ZIP",
+            submission_type="create",
+            credentials_path=credentials_path
+        )
+        ```
+        
+        
+        """
+
+        if zipped_package_path:
+            self.zipped_package_path = zipped_package_path
+        elif hasattr(self,zipped_package_path):
+            zipped_package_path = self.zipped_package_path
+        else:
+            self.zip()
+            
+        
+        gen3_file = submit_package_to_jdc(
+            package_path=self.zipped_package_path,
+            commons_project=project_code,
+            file_guid=file_guid,
+            sheepdog_file_submitter_id=sheepdog_file_submitter_id,
+            submission_type="update",
+            credentials_path=credentials_path
+        )
+
+        # %%
+        baseline_df = self.package.get_resource("baseline").to_pandas()
+        baseline_df["role_in_project"] = "Client" # TODO: add staff
+        timepoints_df = self.package.get_resource("timepoints").to_pandas()
+
+        # get list of people not in baseline but in timepoints
+        isin_baseline = timepoints_df.index.get_level_values("jdc_person_id").isin(baseline_df.index.get_level_values("jdc_person_id"))
+        missing_ppl = timepoints_df.loc[~isin_baseline]
+
+
+        timestamp = time.time()
+        date_time = datetime.date.fromtimestamp(timestamp)
+        str_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
+
+        Path(f"missing_participants_{str_date_time}.txt").open(mode="a").write(
+            f"Sheepdog upload at {str_date_time}:\n"+
+            "The following people are in time points but not in baseline"+
+            "and therefore not added to the time_points node in sheepdog model\n\n"+
+            "\n".join(missing_ppl.index.get_level_values("jdc_person_id"))
+        )
+
+        last_node_output = map_core_measures_to_sheepdog(
+            baseline_df=baseline_df,
+            timepoints_df=timepoints_df.loc[isin_baseline],
+            program="JCOIN",
+            project=commons_project,
+            credentials_path=credentials_path
+        )
+            
 
 def map_core_measures_to_sheepdog(
     baseline_df,timepoints_df,program,project,credentials_path,
