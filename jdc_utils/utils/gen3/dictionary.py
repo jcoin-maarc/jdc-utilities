@@ -5,6 +5,7 @@ import requests
 from frictionless import Resource,Schema
 import pandas as pd
 from pathlib import Path
+
 # submission validation utilities for gen3 sheepdog validation 
 def get_dictionary(endpoint,node_type='_all'):
     ''' 
@@ -142,7 +143,9 @@ class Gen3Node:
         associated with the given credentials, program and project
         """ 
         from gen3.auth import Gen3Auth
-        from gen3.submission import Gen3Submission
+        from jdc_utils.utils.gen3.sdk import import_modified_submission
+
+        Gen3Submission = import_modified_submission()
 
         if credentials_path:
             self.credentials_path = credentials_path
@@ -180,7 +183,9 @@ class Gen3Node:
         examination necessary.
         """ 
         from gen3.auth import Gen3Auth
-        from gen3.submission import Gen3Submission
+        from jdc_utils.utils.gen3.sdk import import_modified_submission
+
+        Gen3Submission = import_modified_submission()
 
         if credentials_path:
             self.credentials_path = credentials_path
