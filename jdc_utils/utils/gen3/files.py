@@ -8,7 +8,7 @@ import copy
 import requests
 import json
 
-MAX_RETRIES = 4
+MAX_RETRIES = 2
 def import_gen3():
 
     class Gen3SubmissionModified(Gen3Submission):
