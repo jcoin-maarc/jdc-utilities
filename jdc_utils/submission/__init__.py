@@ -10,7 +10,7 @@ def submit_package_to_jdc(
     sheepdog_data_category=None,
     sheepdog_data_format=None,
     sheepdog_data_type=None,
-    credential_path="credentials.json",
+    credentials_path="credentials.json",
     submission_type="update"
 
     ):
@@ -41,7 +41,7 @@ def submit_package_to_jdc(
         sheepdog_id=sheepdog_id,
         sheepdog_file_submitter_id=sheepdog_file_submitter_id,
         new_file_path=package_path,
-        credentials_path=credential_path
+        credentials_path=credentials_path
     )
     
     assert submission_type in ["update","create"]

@@ -7,6 +7,8 @@ import hashlib
 import copy
 import requests
 import json
+
+MAX_RETRIES = 4
 def import_gen3():
     # NOTE: using the Gen3File object to get presigned url so no need for these
     # (previously used to call directly from commons API)
@@ -15,7 +17,70 @@ def import_gen3():
     from gen3.index import Gen3Index
     from gen3.submission import Gen3Submission
     from gen3.auth import Gen3Auth
-    return Gen3File,Gen3Index,Gen3Submission,Gen3Auth
+
+    from gen3 import Gen3Error
+
+
+    class Gen3SubmissionModified(Gen3Submission):
+        """ 
+        Modified Gen3Submission object that changes 
+        methods with limitations. For example, submit_record
+        doesn't support chunks which causes a request error with a large
+        number of records submitted at once.
+
+        Tried my best to make this easy to put into a future PR to gen3 SDK.
+
+        """    
+        def submit_record(self,program,project,json,chunk_size=30):
+            """Submit record(s) to a project as json.
+                Args:
+                    program (str): The program to submit to.
+                    project (str): The project to submit to.
+                    json (object): The json defining the record(s) to submit. For multiple records, the json should be an array of records.
+                    chunk_size (integer): The number of records of data to submit for each request to the API.                    
+                Examples:
+                    This submits records in groups of 30 to the CCLE project in the sandbox commons.
+                    >>> Gen3Submission.submit_record("DCF", "CCLE", json,30)
+            """
+            print(
+                "  Submitting {} records in batches of {}".format(
+                    len(json), chunk_size
+                )
+            )
+
+            n_batches = ceil(len(json) / chunk_size)
+            for i in range(n_batches):
+                records = json[
+                    i * chunk_size : (i + 1) * chunk_size
+                ]
+
+                tries = 0
+                while tries < MAX_RETRIES:
+                    response = requests.put(
+                        "{}/api/v0/submission/{}/{}".format(
+                            self._endpoint, program, project
+                        ),
+                        json=json,
+                    )
+                    if response.status_code != 200:
+                        tries += 1
+                        sleep(5)
+                    else:
+                        print("Submission progress: {}/{}".format(i + 1, n_batches))
+                        break
+                if tries == MAX_RETRIES:
+                    if "Entity is not unique" in response.text:
+                        print(f"Couldn't submit the following records:\n {records}")
+                    raise Exception(
+                        "Unable to submit to Sheepdog: {}\n{}".format(
+                            response.status_code, response.text
+                        )
+                    )
+
+        def submit_records(self,program,project,json,chunk_size=30):
+            self.submit_record(program,project,json,chunk_size)
+
+        return Gen3File,Gen3Index,Gen3SubmissionWithChunks,Gen3Auth
 
 class Gen3FileUpdate:
     """
