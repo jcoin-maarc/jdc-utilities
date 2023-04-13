@@ -9,21 +9,24 @@ from jdc_utils.encoding import core_measures as encodings
 from jdc_utils.transforms import to_new_names, replace_ids,shift_dates
 from jdc_utils.transforms.sheepdog import to_baseline_nodes,to_time_point_nodes
 from jdc_utils.utils import zip_package,map_to_sheepdog
+from jdc_utils.submission.general import submit_package_to_jdc
 #frictionless
 from frictionless import Package,Resource
 from frictionless import transform,validate
 # frictionless plugins
 from dataforge.frictionless import encode_table
 import dataforge.frictionless
+
+# base python utils
 from collections import abc
 import re
 import pandas as pd
 import copy 
 from abc import ABC,abstractmethod
 from functools import reduce 
-
 import time 
 import datetime
+
 
 schemas = schema.core_measures.__dict__
 
@@ -397,10 +400,11 @@ class CoreMeasures:
 
     def submit(
         self,
-        project_code,
-        file_guid,
-        sheepdog_file_submitter_id,
-        credentials_path="credentials.json"
+        commons_project_code,
+        commons_file_guid,
+        commons_file_submitter_id,
+        commons_credentials_path="credentials.json",
+        zipped_package_path=None
 
     ):
         """
@@ -413,10 +417,11 @@ class CoreMeasures:
         and map via gui or use following function:
 
         ```python
+        from jdc_utils.submission import submit_package_to_jdc
         gen3_file = submit_package_to_jdc(
             package_path=zip_path,
             commons_project=commons_project,
-            sheepdog_file_submitter_id=sheepdog_file_submitter_id,
+            commons_file_submitter_id=commons_file_submitter_id,
             sheepdog_data_type="Interview",
             sheepdog_data_category="Core Measures",
             sheepdog_data_format="ZIP",
@@ -424,13 +429,21 @@ class CoreMeasures:
             credentials_path=credentials_path
         )
         ```
-        
+        Parameters
+        -----------------
+        commons_project_code (str): project code for authorization service 
+        commons_file_guid: file generated unique id for the indexed file in commons
+        commons_file_submitter_id: the submitter-created id that is a part of the service exposing metadata in data portal (ie sheepdog)
+        credentials_path: credentials with key and API token giving access for the set of permissions
+        zipped_package_path: the path to the to-be-uploaded zipped file
+
         
         """
 
         if zipped_package_path:
+            assert Path(zipped_package_path).suffix==".zip","Must be a zipped/compressed file"
             self.zipped_package_path = zipped_package_path
-        elif hasattr(self,zipped_package_path):
+        elif hasattr(self,"zipped_package_path"):
             zipped_package_path = self.zipped_package_path
         else:
             self.zip()
@@ -438,11 +451,11 @@ class CoreMeasures:
         
         gen3_file = submit_package_to_jdc(
             package_path=self.zipped_package_path,
-            commons_project=project_code,
-            file_guid=file_guid,
-            sheepdog_file_submitter_id=sheepdog_file_submitter_id,
+            commons_project=commons_project_code,
+            file_guid=commons_file_guid,
+            sheepdog_file_submitter_id=commons_file_submitter_id,
             submission_type="update",
-            credentials_path=credentials_path
+            credentials_path=commons_credentials_path
         )
 
         # %%
@@ -470,8 +483,8 @@ class CoreMeasures:
             baseline_df=baseline_df,
             timepoints_df=timepoints_df.loc[isin_baseline],
             program="JCOIN",
-            project=commons_project,
-            credentials_path=credentials_path
+            project=commons_project_code,
+            credentials_path=commons_credentials_path
         )
             
 
