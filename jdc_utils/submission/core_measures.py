@@ -439,7 +439,7 @@ class CoreMeasures:
 
         
         """
-
+        # compress package directory to zip
         if zipped_package_path:
             assert Path(zipped_package_path).suffix==".zip","Must be a zipped/compressed file"
             self.zipped_package_path = zipped_package_path
@@ -448,7 +448,7 @@ class CoreMeasures:
         else:
             self.zip()
             
-        
+        # submit the zipped package to JDC
         gen3_file = submit_package_to_jdc(
             package_path=self.zipped_package_path,
             commons_project=commons_project_code,
@@ -458,7 +458,7 @@ class CoreMeasures:
             credentials_path=commons_credentials_path
         )
 
-        # %%
+        # map subset of variables to sheepdog to expose in data explorer dashboard
         baseline_df = self.package.get_resource("baseline").to_pandas()
         baseline_df["role_in_project"] = "Client" # TODO: add staff
         timepoints_df = self.package.get_resource("timepoints").to_pandas()
