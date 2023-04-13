@@ -246,6 +246,7 @@ def map_to_sheepdog(
                 del sheepdog_dfs[node_name]
 
     # first level validation of new data
+    invalid_nodes = 0
     for node_type,node_df in sheepdog_dfs.items():
         print(f"Validating records for {node_type}")
         node = Gen3Node(
@@ -253,9 +254,17 @@ def map_to_sheepdog(
             node_type=node_type
             )
         node.validate(df=node_df)
-        if not node.validate()["valid"]:
-            return node # return node and figure out why its not valid
+        node_report = node.validate()
+        if not node_report["valid"]:
+            invalid_nodes+=1
+            print("{node.type} invalid")
+            Path("tmp/sheepdog").mkdir(exist_ok=True,parents=True)
+            Path(f"tmp/sheepdog/invalid-{node.type}-report-summary.txt").write_text(node_report.to_summary())
+            Path(f"tmp/sheepdog/invalid-{node.type}.tsv").write_text(node_df.to_csv(sep="\t"))
 
+    if invalid_nodes > 0:
+        raise Exception("There are invalid nodes, check the written report summary and data files in tmp/sheedpog")
+    
     # delete old data: must happen from bottom-up as one cant delete records with child records
     if delete_first:
         bottom_up_list = reversed(list(sheepdog_dfs))
