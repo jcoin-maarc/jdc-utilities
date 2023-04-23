@@ -1,4 +1,4 @@
-name: jdc-utilities
+name: jdc-utils-dev
 channels: 
   - conda-forge
 dependencies:
