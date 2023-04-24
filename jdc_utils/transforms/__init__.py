@@ -1,9 +1,10 @@
 from jdc_utils.io import read_df
 
-#backwards compatability
+# backwards compatability
 from .curation import *
 from .deidentify import *
 from .templates import *
+
 
 def read_transformfile(transformfile):
     with open(transformfile) as file:
@@ -26,11 +27,11 @@ def run_transformfile(df, transformfile):
     transform_mappings = OrderedDict(read_transformfile(transformfile))
 
     for fxn_name, params in transform_mappings.items():
-        if fxn_name in ['replace_ids','shift_dates']:
+        if fxn_name in ["replace_ids", "shift_dates"]:
             print(fxn_name)
             df = getattr(df, fxn_name)(**params)
             print(df.columns)
         else:
             getattr(df, fxn_name)(**params)
-    
-    return df 
+
+    return df

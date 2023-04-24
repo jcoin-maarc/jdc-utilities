@@ -1,8 +1,9 @@
-import pandas as pd
-from pathlib import Path
-from jdc_utils.transforms import deidentify
-import git
 import os
+from pathlib import Path
+
+import git
+import pandas as pd
+from jdc_utils.transforms import deidentify
 
 os.chdir(Path(__file__).parents[1])
 

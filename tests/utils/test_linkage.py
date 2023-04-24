@@ -1,13 +1,15 @@
-""" 
+"""
 fuzzy matching to support data linkage
-""" 
-import fuzz 
+"""
+import fuzz
+
 
 def match_descriptions():
-    pass 
+    pass
+
 
 def match_variable_values():
-    pass 
+    pass
 
 
 def detect_error():
@@ -15,9 +17,8 @@ def detect_error():
 
 
 def map_error():
-    pass 
+    pass
+
 
 def write_mapping():
-    pass 
-
-
+    pass

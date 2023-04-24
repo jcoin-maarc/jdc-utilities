@@ -1,16 +1,16 @@
-import pandas as pd
-
 import re
 from collections import OrderedDict
-import pandas_flavor as pf
 from pathlib import Path
+
+import pandas as pd
+import pandas_flavor as pf
 
 
 # Note: alternative to using pandas-flavor is making a child class of pd.DataFrame
 # all registered functions should transforms df inplace or have capability of inplace
 # if making an inplace option to registered functions, make inplace=True as default.
 @pf.register_dataframe_method
-def to_quarter(df, from_date_name_to_quarter_name,inplace=True):
+def to_quarter(df, from_date_name_to_quarter_name, inplace=True):
     """
     adds a quarter column by converting a date-like column
     into a quarter
@@ -118,17 +118,16 @@ def rename_and_change_values(df: pd.DataFrame, name_and_values: dict):
 
 @pf.register_dataframe_method
 def to_lowercase_names(df):
-    """convert column names to lower case
-
-    """
+    """convert column names to lower case"""
     df = df.copy()
     df.columns = [c.lower() for c in df.columns]
     return df
 
+
 @pf.register_dataframe_method
-def to_new_names(df,mappings,old_and_new_names=False):
+def to_new_names(df, mappings, old_and_new_names=False):
     """
-    Converts column names in the given DataFrame to new names 
+    Converts column names in the given DataFrame to new names
     based on predefined mappings (from jcoin core_measure frictionless schema)
 
     Parameters
@@ -147,21 +146,16 @@ def to_new_names(df,mappings,old_and_new_names=False):
     pandas.DataFrame
         DataFrame with converted column names if old_and_new_names=False
     """
-    mappings_for_df = {
-        old:new for old,new in mappings.items() 
-        if old in df.columns}
+    mappings_for_df = {old: new for old, new in mappings.items() if old in df.columns}
 
     df_output = df.copy()
     if mappings_for_df:
         if old_and_new_names:
-            multiindex = [
-                (old,mappings_for_df.get(old,None))
-                for old in df.columns   
-            ]
-            df_output.columns = pd.MultiIndex(multiindex,names=['oldnames','newnames'])
+            multiindex = [(old, mappings_for_df.get(old, None)) for old in df.columns]
+            df_output.columns = pd.MultiIndex(
+                multiindex, names=["oldnames", "newnames"]
+            )
         else:
-            df_output.rename(columns=mappings_for_df,inplace=True)
-    
+            df_output.rename(columns=mappings_for_df, inplace=True)
+
     return df_output
-
-

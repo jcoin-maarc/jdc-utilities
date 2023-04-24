@@ -1,13 +1,13 @@
+from cli import replace_ids, validate
 from click.testing import CliRunner
-from cli import validate,replace_ids 
-from submission import create_resource_validation_report
-from frictionless import validate_resource,Resource,Schema
+from frictionless import Resource, Schema, validate_resource
 from jsonpath_ng import parse
+from submission import create_resource_validation_report
 
 runner = CliRunner()
 
 
-#replace id test
+# replace id test
 
 # jdc-utils replace-ids \
 # --id-file C:/Users/kranz-michael/projects/test-ids/id_store/test_submitter_ids.txt \
@@ -17,14 +17,19 @@ runner = CliRunner()
 # --file-path C:/Users/kranz-michael/projects/test-ids/local_files/*.csv
 
 replace_id_args = [
-    '--id-file','C:/Users/kranz-michael/projects/test-ids/id_store/test_submitter_ids.txt',
-    '--map-file','C:/Users/kranz-michael/projects/test-ids/id_store/id_mappings.csv',
-    '--map-url','C:/Users/kranz-michael/projects/test-ids-secrets.git',
-    '--column','record_id',
-    '--file-path','C:/Users/kranz-michael/projects/test-ids/local_files/*.csv'
+    "--id-file",
+    "C:/Users/kranz-michael/projects/test-ids/id_store/test_submitter_ids.txt",
+    "--map-file",
+    "C:/Users/kranz-michael/projects/test-ids/id_store/id_mappings.csv",
+    "--map-url",
+    "C:/Users/kranz-michael/projects/test-ids-secrets.git",
+    "--column",
+    "record_id",
+    "--file-path",
+    "C:/Users/kranz-michael/projects/test-ids/local_files/*.csv",
 ]
 
-result = runner.invoke(replace_ids,replace_id_args)
+result = runner.invoke(replace_ids, replace_id_args)
 
 
 # validate test
@@ -37,7 +42,7 @@ result = runner.invoke(replace_ids,replace_id_args)
 # result = runner.invoke(validate,validate_args)
 
 
-# 
+#
 
 
 # result = runner.invoke(validate,["--schema-path",schema_path,"--file-path",file_path])

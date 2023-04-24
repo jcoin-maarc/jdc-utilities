@@ -1,5 +1,5 @@
 name: jdc-utils-dev
-channels: 
+channels:
   - conda-forge
 dependencies:
   - python=3.10

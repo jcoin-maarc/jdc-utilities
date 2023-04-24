@@ -1,9 +1,9 @@
 
 # -----
-# valid: data/baseline.csv 
+# valid: data/baseline.csv
 # -----
 
-## Summary 
+## Summary
 
 +------------------------+-------------------+
 | Description            | Size/Name/Count   |
@@ -17,10 +17,10 @@
 
 
 # -----
-# valid: data/timepoints.csv 
+# valid: data/timepoints.csv
 # -----
 
-## Summary 
+## Summary
 
 +------------------------+---------------------+
 | Description            | Size/Name/Count     |
@@ -31,4 +31,3 @@
 +------------------------+---------------------+
 | Total Time Taken (sec) | 0.449               |
 +------------------------+---------------------+
-
