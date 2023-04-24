@@ -1,8 +1,9 @@
+dataforge @ git+http://git@gitlab.com/mbkranz/data-forge.git
+jsonpath_ng>=1.5.3
+openpyxl>=3.0.9
 pandas>=1.4.1
 pandas_flavor>=0.2.0
-openpyxl>=3.0.9
-xlrd>=2.0.1
-pyyaml>=5.4.1
 pandera>=0.9.0
-jsonpath_ng>=1.5.3
-dataforge @ git+http://git@gitlab.com/mbkranz/data-forge.git
+pre-commit
+pyyaml>=5.4.1
+xlrd>=2.0.1
