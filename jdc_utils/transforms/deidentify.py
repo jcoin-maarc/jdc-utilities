@@ -148,6 +148,35 @@ def shift_dates(df, id_column, date_columns, history_path, seed=None):
     return df_new
 
 
+def deidentify(
+    df,
+    id_file,
+    id_column,
+    history_path,
+    date_columns,
+    fxns=["replace_ids", "shift_dates"],
+):
+    """wrapper function for all deidentification steps"""
+    if "replace_ids" in fxns:
+        df = replace_ids(
+            df,
+            id_file=id_file,
+            id_column=id_column,
+            history_path=history_path,
+        )
+    if "shift_dates" in fxns:
+        if "replace_ids" in fxns:
+            id_column = pd.read_csv(self.id_file).squeeze().name
+
+        df = shift_dates(
+            df,
+            id_column=id_column,
+            date_columns=date_columns,
+            history_path=history_path,
+        )
+    return df
+
+
 def init_version_history(file_history_path, overwrite=False):
     file_history_path = Path(file_history_path)
 

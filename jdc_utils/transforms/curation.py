@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 import pandas_flavor as pf
+import petl as etl
 
 
 # Note: alternative to using pandas-flavor is making a child class of pd.DataFrame
@@ -159,3 +160,16 @@ def to_new_names(df, mappings, old_and_new_names=False):
             df_output.rename(columns=mappings_for_df, inplace=True)
 
     return df_output
+
+
+@pf.register_dataframe_method
+def add_missing_fields(df, field_list, missing_value="Missing"):
+    tbl = etl.fromdataframe(df)
+    fieldnames_in_data = tbl.fieldnames()
+    fields_to_add = []
+    for fieldname in field_list:
+        if fieldname not in fieldnames_in_data:
+            fields_to_add.append((fieldname, missing_value))
+
+    targetdf = tbl.addfields(fields_to_add).cut(field_list).todf()
+    return targetdf

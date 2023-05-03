@@ -1,5 +1,5 @@
 """
-Generate and validate data package for submission by hubs
+Generate,validate, and submit a core measure data package
 """
 import copy
 import datetime
@@ -8,7 +8,6 @@ import datetime
 import os
 import re
 import time
-from abc import ABC, abstractmethod
 
 # base python utils
 from collections import abc
@@ -23,15 +22,13 @@ from dataforge.frictionless import encode_table
 
 # frictionless
 from frictionless import Package, Resource, transform, validate
+
+from jdc_utils import schemas
 from jdc_utils.encoding import core_measures as encodings
 from jdc_utils.submission.general import submit_package_to_jdc
-from jdc_utils.transforms import replace_ids, shift_dates, to_new_names
+from jdc_utils.transforms import add_missing_fields, deidentify, to_new_names
 from jdc_utils.transforms.sheepdog import to_baseline_nodes, to_time_point_nodes
-from jdc_utils.utils import map_to_sheepdog, zip_package
-
-from jdc_utils import schema
-
-schemas = schema.core_measures.__dict__
+from jdc_utils.utils import map_to_sheepdog, read_package, zip_package
 
 
 class CoreMeasures:
@@ -42,13 +39,6 @@ class CoreMeasures:
 
     Parameters
     ----------
-    filepath: Union[str, Path]
-        Can be one of the following:
-            - A path to a data file
-            - A path to a glob-like regular expression for multiple data files
-            - A package descriptor file (e.g., data-package.json) with resources
-            - A path to a package directory (either containing a data-package.json,
-            core measure data files, or input files to be transformed into core measure files)
     id_file: Optional[str]
         The generated ids (see `replace_id` function for usage)
     id_column: Optional[str]
@@ -61,12 +51,6 @@ class CoreMeasures:
         (if none, will default to all date column types in df. if no date column types, then will not convert anything)
     outdir: Optional[str]
         Directory to write core measure package
-    is_core_measures: Optional[bool]
-        Specifies whether the input is already a core measure package.
-        This may occur if there are the necessary files (i.e., baseline.csv and timepoints.csv) and only
-        packaging is required. For example, there may be a separate workflow that does the transformations.
-    kwargs:
-        Any other package properties you want to pass into the Package object
     """
 
     def __init__(
@@ -77,241 +61,120 @@ class CoreMeasures:
         history_path=None,
         date_columns=None,
         outdir=None,
-        is_core_measures=False,
-        **kwargs,
+        transform_steps=[
+            "add_new_names",
+            "add_missing_fields",
+            "replace_ids",
+            "shift_dates",
+        ],
     ):
         # resolve paths just in case directories change
         # note, check that this is a directory in case the input
         # is something else like a url that is valid input to Package
         # NOTE: should all be pathlike
-        def _resolve_if_path(var):
-            if var:
-                if os.path.isdir(var) or os.path.isfile(var):
-                    return str(Path(var).resolve())
-                else:
-                    return var
-            else:
-                return var
-
-        self.filepath = _resolve_if_path(filepath)
         self.id_file = _resolve_if_path(id_file)
         self.id_column = id_column
         self.history_path = _resolve_if_path(history_path)
         self.date_columns = date_columns
         self.outdir = _resolve_if_path(outdir)
-        if outdir:
-            self.zipdir = str(
-                Path(self.outdir).parent
-            )  # directory to zip the output directory package
-        else:
-            self.zipdir = os.getcwd()
-
-        self.filename = Path(filepath).name
-
-        self.package = None
-        self.sourcepackage = None
-
         self.basedir = pwd = os.getcwd()
-        filename = self.filename
-        filepath = self.filepath
-        print(pwd)
-        # NOTE for code below: frictionless security doesn't play well with particular paths
-        # see: https://specs.frictionlessdata.io/data-resource/#data-location
-        os.chdir(Path(filepath).parent)
+        self.transform_steps = transform_steps
+        self.package = Package()
 
-        if Path(Path(filepath).name).is_dir():
-            os.chdir(Path(filepath).name)
-            if Path("data-package.json").is_file():
-                package = Package("data-package.json", **kwargs)
-            elif Path("datapackage.json").is_file():
-                package = Package("datapackage.json", **kwargs)
-            else:
-                package = Package("*", **kwargs)
-        else:
-            package = Package(filename, **kwargs)
-
-        print(os.getcwd())
-
-        # has data package
-        # has a baseline and timepoints resource
-        package_pandas = Package(**kwargs)
-        for resource in package.resources:
-            try:
-                name = resource.name
-                data = resource.to_petl().todf()
-                resource_pandas = Resource(data, name=name)
-                package_pandas.add_resource(resource_pandas)
-            except:
-                print(f"In {filepath}")
-                print(f"Something went wrong when loading {name}")
-                print(f"Removing {name} from the source package")
-                del resource
-
-        os.chdir(pwd)  # NOTE: change dir to base dir for other steps
-
-        if is_core_measures:
-            self.package = package_pandas
-            self.sync()
-        else:
-            self.sourcepackage = package_pandas
-            self.package = Package(**kwargs)
-
-    def to_baseline():
-        """
-        takes the source package (self.sourcepackage) and, after the necessary transforms,
-        adds the baseline resource
-        to the core measure package in the format of a pandas dataframe (self.package).
-
-
-        Note, if is_core_measure is specified -- for example if there are already
-        the appropriate data files, this function isn't necessary, which is why
-        it is optional rather than required with @abstractmethod.
-
-        """
-        print(
-            "This is specific for each hub. Please define your specific function here."
-        )
-        return self
-
-    def to_timepoints():
-        """
-        takes the source package (self.sourcepackage) and, after the necessary transforms,
-        adds the timepoints resource
-        to the core measure package in the format of a pandas dataframe (self.package).
-
-
-        Note, if is_core_measure is specified -- for example if there are already
-        the appropriate data files, this function isn't necessary, which is why
-        it is optional rather than required with @abstractmethod.
-
-        """
-        print(
-            "This is specific for each hub. Please define your specific function here."
-        )
-        return self
-
-    def deidentify(
-        self,
-        id_file=None,
-        id_column=None,
-        history_path=None,
-        date_columns=None,
-        fxns=["replace_ids", "shift_dates"],
-    ):
-        """apply deidentification steps to the source package"""
-        assert self.sourcepackage
-
-        def _getattrcopy(varstr):
-            return copy.copy(getattr(self, varstr, None))
-
-        if id_file:
-            setattr(self, "id_file", id_file)
-        if id_column:
-            setattr(self, "id_column", id_column)
-        if history_path:
-            setattr(self, "history_path", history_path)
-        if date_columns:
-            setattr(self, "date_columns", date_columns)
-
-        os.chdir(self.basedir)
-
-        for resource in self.sourcepackage.resources:
-            id_file = _getattrcopy("id_file")
-            id_column = _getattrcopy("id_column")
-            history_path = _getattrcopy("history_path")
-            date_columns = _getattrcopy("date_columns")
-
-            sourcedf = resource.data.copy()
-
-            if "replace_ids" in fxns:
-                sourcedf = replace_ids(
-                    sourcedf,
-                    id_file=id_file,
-                    id_column=id_column,
-                    history_path=history_path,
-                )
-            if "shift_dates" in fxns:
-                if "replace_ids" in fxns:
-                    id_column = pd.read_csv(self.id_file).squeeze().name
-
-                sourcedf = shift_dates(
-                    sourcedf,
-                    id_column=id_column,
-                    date_columns=date_columns,
-                    history_path=history_path,
-                )
-
-            resource.data = sourcedf
-            resource.format = "pandas"
-
-        return self
-
-    def _add_schemas(self):
-        # add schema
-        for resource in self.package.resources:
-            name = resource.name.lower().replace("-", "").replace("_", "")
-
-            # in case local files have prefixes etc
-            for s in schemas:
-                match = re.search(s, name)
-                if match:
-                    resource["schema"] = schemas[match.group()]
-
-    def _to_new_names(self):
-        fields = (
-            schema.core_measures.baseline["fields"]
-            + schema.core_measures.timepoints["fields"]
-        )
-        _mapnames = lambda x, y: {
-            **{y["custom"]["jcoin:original_name"]: y["name"], **x}
+    @staticmethod
+    def __add_new_names(df, schema):
+        fields = schema["fields"]
+        mappings = {
+            field["custom"]["jcoin:original_name"]: field["name"] for field in fields
         }
-        mappings = reduce(_mapnames, fields, {})
-        for resource in self.package.resources:
-            sourcedf = resource.data.copy()
-            targetdf = to_new_names(df=sourcedf, mappings=mappings)
-            resource.data = targetdf
-            resource.format = "pandas"
+        return to_new_names(df=df, mappings=mappings)
 
-    def _add_missing_fields(self, missing_value="Missing"):
-        for resource in self.package.resources:
-            tbl = resource.to_petl()
-            fieldnames = tbl.fieldnames()
-            fields = []
-            fields_to_add = []
-            for field in resource.schema.fields:
-                fields.append(field.name)
-                if field.name not in fieldnames:
-                    fields_to_add.append((field.name, missing_value))
+    @staticmethod
+    def __add_missing_fields(df, schema):
+        field_list = [field["name"] for field in schema["fields"]]
+        return add_missing_fields(df, field_list, missing_value="Missing")
 
-            df = tbl.addfields(fields_to_add).cut(fields).todf()
-            resource.data = df
-            resource.format = "pandas"
+    def _add_resource(
+        self,
+        df_or_path,
+        name,
+        schema,
+        transform_steps=[
+            "add_new_names",
+            "add_missing_fields",
+            "replace_ids",
+            "shift_dates",
+        ],
+    ):
+        if isinstance(df_or_path, pd.DataFrame):
+            df = df_or_path
+        elif isinstance(df_or_path, (str, os.PathLike)):
+            df = Resource(path=str(df_or_path)).to_petl().todf()
 
-    def sync(self):
-        """
-        if a core measure package exists
-        sync by adding most up to date schemas and
-        adding missing fields.
-        """
-        self._to_new_names()
-        self._add_schemas()
-        self._add_missing_fields()
+        deidentify_fxns = (
+            []
+        )  # have dependencies so are bundled together in its own wrapper function
+        fxns = []
+        for trans in transform_steps:
+            if trans == "add_new_names":
+                fxns.append((self.__add_new_names, {"schema": schema}))
+            elif trans == "add_missing_fields":
+                fxns.append((self.__add_missing_fields, {"schema": schema}))
+            elif trans == "replace_ids" or trans == "shift_dates":
+                deidentify_fxns.append(trans)
 
-    def write(self, outdir=None, **kwargs):
+        # if deidentify functions listed, add to the function list
+        if deidentify_fxns:
+            deidentify_params = {
+                "id_file": self.id_file,
+                "id_column": self.id_column,
+                "history_path": self.history_path,
+                "date_columns": self.date_columns,
+                "fxns": deidentify_fxns,
+            }
+            fxns.append((deidentify, deidentify_params))
+
+        # chain through selected functions
+        newdf = reduce(lambda _df, fxn: fxn[0](_df, **fxn[-1]), fxns, df)
+        # make resource
+        resource = Resource(name=name, data=newdf, schema=schema, format="pandas")
+
+        self.package.add_resource(resource)
+
+    def add_baseline(self, df_or_path):
+        name = "baseline"
+        schema = schemas.core_measures.baseline
+        steps = self.transform_steps
+        self._add_resource(df_or_path, name, schema, steps)
+
+    def add_timepoints(self, df_or_path):
+        name = "timepoints"
+        schema = schemas.core_measures.timepoints
+        steps = self.transform_steps
+        self._add_resource(df_or_path, name, schema, steps)
+
+    def add_staff_baseline(self, df_or_path):
+        name = "staff-baseline"
+        schema = schemas.core_measures.staff_baseline
+        steps = self.transform_steps
+        self._add_resource(df_or_path, name, schema, steps)
+
+    def add_staff_timepoints(self, df_or_path):
+        name = "staff-timepoints"
+        schema = schemas.core_measures.staff_timepoints
+        steps = self.transform_steps
+        self._add_resource(df_or_path, name, schema, steps)
+
+    def write(self, outdir=None):
         """
         writes package to core measure format
         NOTE: use kwargs to pass in all package (ie hub)
         specific package properties (title,name,desc etc)
         """
-        self.sync()
-
-        self.written_package = Package(**kwargs)
-
         if outdir:
             self.outdir = outdir
-        else:
-            outdir = self.outdir
 
+        self.written_package = Package()
         Path(outdir).mkdir(exist_ok=True, parents=True)
         os.chdir(outdir)
         Path("schemas").mkdir(exist_ok=True)
@@ -493,7 +356,7 @@ class CoreMeasures:
 
         timestamp = time.time()
         date_time = datetime.date.fromtimestamp(timestamp)
-        str_date_time = date_time.strftime("%Y-%m-%d, %H:%M:%S")
+        str_date_time = date_time.strftime("%Y%m%d")
 
         Path(f"missing_participants_{str_date_time}.txt").open(mode="a").write(
             f"Sheepdog upload at {str_date_time}:\n"
@@ -549,3 +412,13 @@ def map_core_measures_to_sheepdog(
         node_list=node_list,
         delete_first=delete_first,
     )
+
+
+def _resolve_if_path(var):
+    if var:
+        if os.path.isdir(var) or os.path.isfile(var):
+            return str(Path(var).resolve())
+        else:
+            return var
+    else:
+        return var
