@@ -335,7 +335,7 @@ class Gen3FileUpdate:
                 else:
                     self.latest_sheepdog_record = None
 
-        except request.exception.HTTPError:
+        except requests.exceptions.HTTPError:
             print("Could not get latest sheepdog record")
             self.latest_sheepdog_record = None
             return self
