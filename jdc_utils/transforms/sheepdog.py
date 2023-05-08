@@ -115,12 +115,15 @@ def to_time_point_node(time_point_df):
 
 
 def to_baseline_nodes(baseline_df):
-    return {
-        "participant": to_participant_node(baseline_df),
-        "enrollment": to_enrollment_node(baseline_df),
-        "demographic_baseline": to_demographic_baseline_node(baseline_df),
-    }
+    return [
+        {"name": "participant", "data": to_participant_node(baseline_df)},
+        {"name": "enrollment", "data": to_enrollment_node(baseline_df)},
+        {
+            "name": "demographic_baseline",
+            "data": to_demographic_baseline_node(baseline_df),
+        },
+    ]
 
 
 def to_time_point_nodes(timepoints_df):
-    return {"time_point": to_time_point_node(timepoints_df)}
+    return [{"name": "time_point", "data": to_time_point_node(timepoints_df)}]

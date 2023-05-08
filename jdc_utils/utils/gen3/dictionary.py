@@ -156,6 +156,7 @@ class Gen3Node:
         associated with the given credentials, program and project
         """
         from gen3.auth import Gen3Auth
+
         from jdc_utils.utils.gen3.sdk import import_modified_submission
 
         Gen3Submission = import_modified_submission()
@@ -199,6 +200,7 @@ class Gen3Node:
         examination necessary.
         """
         from gen3.auth import Gen3Auth
+
         from jdc_utils.utils.gen3.sdk import import_modified_submission
 
         Gen3Submission = import_modified_submission()
@@ -240,7 +242,7 @@ def map_to_sheepdog(
         > by default, will delete the node contents after exporting records for backup.
     3. Submits to sheepdog.
 
-    sheepdog_dfs: dictionary of pandas DataFrames in hierarchical order of nodes
+    sheepdog_resource: resources list in hierarchical order of nodes
         (eg from parent to child nodes) with key being node_type (node name;eg participant, demographic etc)
             and value being pandas dfs.
     node_list: if specified, will only submit said node.
@@ -262,7 +264,9 @@ def map_to_sheepdog(
 
     # first level validation of new data
     invalid_nodes = 0
-    for node_type, node_df in sheepdog_dfs.items():
+    for node_resource in sheepdog_resources:
+        node_type = node_resource["name"]
+        node_df = node_resource["data"]
         print(f"Validating records for {node_type}")
         node = Gen3Node(endpoint=endpoint, node_type=node_type)
         node.validate(df=node_df)

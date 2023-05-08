@@ -80,6 +80,7 @@ class CoreMeasures:
         self.basedir = pwd = os.getcwd()
         self.transform_steps = transform_steps
         self.package = Package()
+        self.sheepdog_package = Package()
 
     @staticmethod
     def __add_new_names(df, schema):
@@ -94,6 +95,7 @@ class CoreMeasures:
         field_list = [field["name"] for field in schema["fields"]]
         return add_missing_fields(df, field_list, missing_value="Missing")
 
+    # below are internal functions to be called by the user facing methods add_<resource name>() and submit()
     def _add_resource(
         self,
         df_or_path,
@@ -141,6 +143,84 @@ class CoreMeasures:
 
         self.package.add_resource(resource)
 
+    def _add_baseline_to_sheepdog(self):
+        baseline_df = pd.concat(
+            [
+                self.package.get_resource(name).to_pandas().assign(name=name)
+                for name in ["baseline", "staff-baseline"]
+            ]
+        )
+        role_map = {"baseline": "Client", "staff-baseline": "Staff"}
+        baseline_df["role_in_project"] = baseline_df["name"].replace(role_map)
+        baseline_node_data = to_baseline_nodes(baseline_df)
+
+        self.sheepdog_package.resources.extend(baseline_node_data)
+
+    def _add_timepoints_to_sheepdog(self):
+        assert self.package.get_resource("baseline")
+
+        timepoints_df = self.package.get_resource("timepoints").to_pandas()
+
+        # get list of people not in baseline but in timepoints
+        isin_baseline = timepoints_df.index.get_level_values("jdc_person_id").isin(
+            baseline_df.index.get_level_values("jdc_person_id")
+        )
+        missing_ppl = timepoints_df.loc[~isin_baseline]
+
+        timestamp = time.time()
+        date_time = datetime.date.fromtimestamp(timestamp)
+        str_date_time = date_time.strftime("%Y%m%d")
+
+        Path(f"missing_participants_{str_date_time}.txt").open(mode="a").write(
+            f"Sheepdog upload at {str_date_time}:\n"
+            + "The following people are in time points but not in baseline"
+            + "and therefore not added to the time_points node in sheepdog model\n\n"
+            + "\n".join(missing_ppl.index.get_level_values("jdc_person_id"))
+        )
+        timepoints_df.loc[isin_baseline]
+        timepoints_node_data = to_time_point_nodes(timepoints_df)
+
+        if self.sheepdog_resources:
+            self.sheepdog_resources.extend((timepoints_node_data))
+        else:
+            raise Exception("Need to add parent nodes (from baseline resource) first")
+
+    def _map_to_sheepdog(
+        program,
+        project,
+        credentials_path,
+        sheepdog_resources=None,
+        node_list=None,
+        delete_first=True,
+    ):
+        """
+        Map core measure variables to existing sheepdog model
+
+        baseline_sheepdog_resource: pandas dataframe of logical representation (ie True/False boolean instead of Yes/No; all missing values are NA) of  validated core measure package
+        NOTE: the `current_project_status` column MUST be added as it is not a part of the core measures currently.
+        timepoints_sheepdog_resource: same as baseline_df but for the time points dataset
+        program: see map_to_sheepdog
+        project: see map_to_sheepdog
+        credentials_path: see map_to_sheepdog
+        node_list: see map_to_sheepdog
+        delete_first: see map_to_sheepdog
+        """
+
+        endpoint = "https://jcoin.datacommons.io/"
+
+        if not sheepdog_resources:
+            sheepdog_resources = self.sheepdog_resources
+        map_to_sheepdog(
+            sheepdog_dfs=sheepdog_resources,
+            endpoint=endpoint,
+            program=program,
+            project=project,
+            credentials_path=credentials_path,
+            node_list=node_list,
+            delete_first=delete_first,
+        )
+
+    # user facing functions to build core measure data package, writing the package, and submitting to JDC
     def add_baseline(self, df_or_path):
         name = "baseline"
         schema = schemas.core_measures.baseline
@@ -343,75 +423,14 @@ class CoreMeasures:
             credentials_path=commons_credentials_path,
         )
 
-        # map subset of variables to sheepdog to expose in data explorer dashboard
-        baseline_df = self.package.get_resource("baseline").to_pandas()
-        baseline_df["role_in_project"] = "Client"  # TODO: add staff
-        timepoints_df = self.package.get_resource("timepoints").to_pandas()
+        self._convert_baseline_to_sheepdog()
+        self._convert_timepoints_to_sheepdog()
 
-        # get list of people not in baseline but in timepoints
-        isin_baseline = timepoints_df.index.get_level_values("jdc_person_id").isin(
-            baseline_df.index.get_level_values("jdc_person_id")
-        )
-        missing_ppl = timepoints_df.loc[~isin_baseline]
-
-        timestamp = time.time()
-        date_time = datetime.date.fromtimestamp(timestamp)
-        str_date_time = date_time.strftime("%Y%m%d")
-
-        Path(f"missing_participants_{str_date_time}.txt").open(mode="a").write(
-            f"Sheepdog upload at {str_date_time}:\n"
-            + "The following people are in time points but not in baseline"
-            + "and therefore not added to the time_points node in sheepdog model\n\n"
-            + "\n".join(missing_ppl.index.get_level_values("jdc_person_id"))
-        )
-
-        last_node_output = map_core_measures_to_sheepdog(
-            baseline_df=baseline_df,
-            timepoints_df=timepoints_df.loc[isin_baseline],
+        last_node_output = self._map_to_sheepdog(
             program="JCOIN",
             project=commons_project_code,
             credentials_path=commons_credentials_path,
         )
-
-
-def map_core_measures_to_sheepdog(
-    baseline_df,
-    timepoints_df,
-    program,
-    project,
-    credentials_path,
-    node_list=None,
-    delete_first=True,
-):
-    """
-    Map core measure variables to existing sheepdog model
-
-    baseline_df: pandas dataframe of logical representation (ie True/False boolean instead of Yes/No; all missing values are NA) of  validated core measure package
-     NOTE: the `current_project_status` column MUST be added as it is not a part of the core measures currently.
-    timepoints_df: same as baseline_df but for the time points dataset
-    staff_df: TODO: NOT YET ADDED
-    program: see map_to_sheepdog
-    project: see map_to_sheepdog
-    credentials_path: see map_to_sheepdog
-    node_list: see map_to_sheepdog
-    delete_first: see map_to_sheepdog
-    """
-
-    endpoint = "https://jcoin.datacommons.io/"
-
-    baseline_node_data = to_baseline_nodes(baseline_df)
-    timepoints_node_data = to_time_point_nodes(timepoints_df)
-    sheepdog_data = {**baseline_node_data, **timepoints_node_data}
-
-    map_to_sheepdog(
-        sheepdog_dfs=sheepdog_data,
-        endpoint=endpoint,
-        program=program,
-        project=project,
-        credentials_path=credentials_path,
-        node_list=node_list,
-        delete_first=delete_first,
-    )
 
 
 def _resolve_if_path(var):
