@@ -21,6 +21,19 @@ def get_dictionary(endpoint, node_type="_all"):
     return dictionary
 
 
+def _unnest(df):
+    """unnest any column with a . separator in nmae such that it is a dict per value"""
+    df = pd.DataFrame(df)
+    nested_cols = [name for name in df.columns if len(name.split(".")) > 1]
+    for name in nested_cols:
+        nested_name = name.split(".")
+        newname = nested_name.pop(0)
+        for _nested_name in nested_name:
+            df[name] = df[name].apply(lambda v: {_nested_name: v})
+        df.rename(columns={name: newname}, inplace=True)
+    return df
+
+
 class Gen3Node:
     """
     object represents a gen3 node with gen3 specific properties
@@ -120,33 +133,25 @@ class Gen3Node:
 
             self.schema["fields"].append(frictionless_prop)
 
-    def add_data(self, df):
+    def validate(self, df):
         """
         validates a pandas dataframe against node's frictionless schema.
 
         Note,in sheepdog data model, record must be present in parent node.
         Since this doesn't account for parent node, wont detect.But see TODO
         in class docstring.
+
         """
-        cols = [p["name"] for p in self.schema["fields"]]
-
-        def add_missing(df):
-            missing = {col: None for col in cols if not col in df.columns}
-            return df.assign(**missing)
-
-        self.data = (
-            df.reset_index()
+        field_names = Schema(self.schema).field_names
+        df = df.reset_index()
+        data = (
+            df.assign(
+                **{col: None for col in field_names if not col in df.columns}
+            )  # add missing
             .assign(type=self.type)
-            .pipe(lambda df: add_missing(df))  # add missing
-            .filter(items=cols)  # reorder field
-            # .where(lambda df:df.notna(),None)#allows record to be kept when converting to json array (needed for fricitonless)
-            .to_dict(orient="records")
+            .filter(items=field_names)  # reorder field
         )
-
-    def validate(self, df=pd.DataFrame()):
-        if not df.empty:
-            self.add_data(df)
-        report = Resource(data=self.data, schema=self.schema).validate()
+        report = Resource(data=data, schema=self.schema).validate()
         return report
 
     def submit(self, df, program, project, credentials_path=None):
@@ -165,26 +170,18 @@ class Gen3Node:
             self.credentials_path = credentials_path
         sheepdog = Gen3Submission(Gen3Auth(refresh_file=self.credentials_path))
 
-        self.add_data(df)
-
-        if Resource(data=self.data, schema=self.schema).validate()["valid"]:
-
-            def unnest(df):
-                nested_cols = [name for name in df.columns if len(name.split(".")) > 1]
-                for name in nested_cols:
-                    nested_name = name.split(".")
-                    newname = nested_name.pop(0)
-                    for _nested_name in nested_name:
-                        df[name] = df[name].apply(lambda v: {_nested_name: v})
-                    df.rename(columns={name: newname}, inplace=True)
-                return df
-
-            records = pd.DataFrame(self.data).pipe(unnest).to_dict(orient="records")
-
+        if self.validate(df)["valid"]:
+            records = (
+                pd.DataFrame(df)
+                .assign(type=self.type)
+                .pipe(_unnest)
+                .reset_index()
+                .to_dict(orient="records")
+            )
             self.sheepdog_record = sheepdog.submit_record(program, project, records)
         else:
             print(
-                f"Node `{self.type}` not valid. run `node.resource.validate()` to see error report:"
+                f"Node `{self.type}` not valid. run `node.validate(df)` to see error report:"
             )
 
     def delete(self, program, project, credentials_path=None):
@@ -220,8 +217,12 @@ class Gen3Node:
         sheepdog.delete_node(program, project, self.type)
 
 
+class Gen3Package:
+    pass
+
+
 def map_to_sheepdog(
-    sheepdog_dfs,
+    sheepdog_package,
     endpoint,
     program,
     project,
@@ -230,7 +231,7 @@ def map_to_sheepdog(
     delete_first=True,
 ):
     """
-     Map a set of node records (formatted as a tabular pandas dataframe;
+     Map a set of node records (ie package;formatted as a tabular pandas dataframe;
         see gen3 TSV format for more details for tabular submissions)
     to sheepdog data commons data model.
 
@@ -257,20 +258,20 @@ def map_to_sheepdog(
         program=program, project=project, credentials_path=credentials_path
     )
     if node_list:
-        initial_node_list = list(sheepdog_dfs)
+        initial_node_list = list(sheepdog_package.resource_names)
         for node_name in initial_node_list:
             if not node_name in node_list:
-                del sheepdog_dfs[node_name]
+                sheepdog_package.remove_resource(node_name)
 
     # first level validation of new data
     invalid_nodes = 0
+    sheepdog_resources = sheepdog_package.resources
     for node_resource in sheepdog_resources:
         node_type = node_resource["name"]
         node_df = node_resource["data"]
         print(f"Validating records for {node_type}")
         node = Gen3Node(endpoint=endpoint, node_type=node_type)
-        node.validate(df=node_df)
-        node_report = node.validate()
+        node_report = node.validate(df=node_df)
         if not node_report["valid"]:
             invalid_nodes += 1
             print("{node.type} invalid")
@@ -289,14 +290,16 @@ def map_to_sheepdog(
 
     # delete old data: must happen from bottom-up as one cant delete records with child records
     if delete_first:
-        bottom_up_list = reversed(list(sheepdog_dfs))
+        bottom_up_list = reversed(list(sheepdog_package.resource_names))
         for node_type in bottom_up_list:
             node = Gen3Node(endpoint, node_type)
             print(f"Deleting records for {node_type}")
             node.delete(**sheepdog_params)
 
     # submit new data
-    for node_type, node_df in sheepdog_dfs.items():
+    for node_resource in sheepdog_resources:
+        node_type = node_resource["name"]
+        node_df = node_resource["data"]
         print(f"Submitting records for {node_type}")
         node = Gen3Node(endpoint=endpoint, node_type=node_type)
         node.submit(df=node_df, **sheepdog_params)
