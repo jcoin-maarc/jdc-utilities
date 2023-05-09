@@ -1,9 +1,6 @@
-from jdc_utils.io import read_df
-
 # backwards compatability
 from .curation import *
 from .deidentify import *
-from .templates import *
 
 
 def read_transformfile(transformfile):

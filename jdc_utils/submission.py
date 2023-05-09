@@ -1,4 +1,4 @@
-from jdc_utils.utils import Gen3FileUpdate
+from jdc_utils.utils.gen3 import Gen3FileUpdate
 
 
 def submit_package_to_jdc(

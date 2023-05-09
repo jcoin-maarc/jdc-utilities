@@ -1,9 +1,10 @@
+""" utilities for collecting aggregated data from templates """
+
 import random
 
 import pandas as pd
 
 
-# utilities for collecting aggregated data from templates
 def split_marginals_and_total(df: pd.DataFrame) -> pd.DataFrame:
     """split into total and marginals
 

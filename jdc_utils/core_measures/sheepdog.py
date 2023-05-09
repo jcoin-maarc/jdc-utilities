@@ -5,7 +5,7 @@ data commons transforms needed to map to sheepdog data model from validated fric
 import pandas as pd
 from frictionless import Resource
 
-from .curation import collapse_checkall
+from jdc_utils.transforms import collapse_checkall
 
 # NOTE: these are based on the logical representations rather than
 # the physical representations. That is, for example,
