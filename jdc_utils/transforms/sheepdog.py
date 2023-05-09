@@ -4,6 +4,7 @@ which are common across hubs/datasets
 """
 
 import pandas as pd
+from frictionless import Resource
 
 from .curation import collapse_checkall
 
@@ -37,6 +38,7 @@ recode_map = {
         "Genderqueer/gender nonconforming/neither exclusively male nor female": "Gender nonconforming",
         "Additional gender category (or other)": "Something else",
     },
+    "current_study_status": {"Unknown": "On study"},
 }
 
 
@@ -69,7 +71,9 @@ def to_participant_node(baseline_df):
             "submitter_id": baseline_df.index.get_level_values("jdc_person_id"),
             "role_in_project": baseline_df["role_in_project"],
             "quarter_recruited": baseline_df["quarter_enrolled"],
-            "current_client_status": baseline_df["current_study_status"],
+            "current_client_status": baseline_df["current_study_status"].replace(
+                recode_map["current_study_status"]
+            ),
         }
     )
     return node_df.set_index("submitter_id")
@@ -114,16 +118,27 @@ def to_time_point_node(time_point_df):
     return node_df.set_index("submitter_id")
 
 
-def to_baseline_nodes(baseline_df):
-    return [
-        {"name": "participant", "data": to_participant_node(baseline_df)},
+def _to_baseline_nodes(baseline_df, role):
+    participant = to_participant_node(baseline_df).assign(role_in_project=role)
+    resources = [
+        {"name": "participant", "data": participant},
         {"name": "enrollment", "data": to_enrollment_node(baseline_df)},
         {
             "name": "demographic_baseline",
             "data": to_demographic_baseline_node(baseline_df),
         },
     ]
+    return [Resource(**resource, format="pandas") for resource in resources]
+
+
+def to_baseline_nodes(baseline_df):
+    return _to_baseline_nodes(baseline_df, "Client")
+
+
+def to_staff_baseline_nodes(baseline_df):
+    return _to_baseline_nodes(baseline_df, "Staff")
 
 
 def to_time_point_nodes(timepoints_df):
-    return [{"name": "time_point", "data": to_time_point_node(timepoints_df)}]
+    resources = [{"name": "time_point", "data": to_time_point_node(timepoints_df)}]
+    return [Resource(**resource, format="pandas") for resource in resources]

@@ -82,144 +82,6 @@ class CoreMeasures:
         self.package = Package()
         self.sheepdog_package = Package()
 
-    @staticmethod
-    def __add_new_names(df, schema):
-        fields = schema["fields"]
-        mappings = {
-            field["custom"]["jcoin:original_name"]: field["name"] for field in fields
-        }
-        return to_new_names(df=df, mappings=mappings)
-
-    @staticmethod
-    def __add_missing_fields(df, schema):
-        field_list = [field["name"] for field in schema["fields"]]
-        return add_missing_fields(df, field_list, missing_value="Missing")
-
-    # below are internal functions to be called by the user facing methods add_<resource name>() and submit()
-    def _add_resource(
-        self,
-        df_or_path,
-        name,
-        schema,
-        transform_steps=[
-            "add_new_names",
-            "add_missing_fields",
-            "replace_ids",
-            "shift_dates",
-        ],
-    ):
-        if isinstance(df_or_path, pd.DataFrame):
-            df = df_or_path
-        elif isinstance(df_or_path, (str, os.PathLike)):
-            df = Resource(path=str(df_or_path)).to_petl().todf()
-
-        deidentify_fxns = (
-            []
-        )  # have dependencies so are bundled together in its own wrapper function
-        fxns = []
-        for trans in transform_steps:
-            if trans == "add_new_names":
-                fxns.append((self.__add_new_names, {"schema": schema}))
-            elif trans == "add_missing_fields":
-                fxns.append((self.__add_missing_fields, {"schema": schema}))
-            elif trans == "replace_ids" or trans == "shift_dates":
-                deidentify_fxns.append(trans)
-
-        # if deidentify functions listed, add to the function list
-        if deidentify_fxns:
-            deidentify_params = {
-                "id_file": self.id_file,
-                "id_column": self.id_column,
-                "history_path": self.history_path,
-                "date_columns": self.date_columns,
-                "fxns": deidentify_fxns,
-            }
-            fxns.append((deidentify, deidentify_params))
-
-        # chain through selected functions
-        newdf = reduce(lambda _df, fxn: fxn[0](_df, **fxn[-1]), fxns, df)
-        # make resource
-        resource = Resource(name=name, data=newdf, schema=schema, format="pandas")
-
-        self.package.add_resource(resource)
-
-    def _add_baseline_to_sheepdog(self):
-        baseline_df = pd.concat(
-            [
-                self.package.get_resource(name).to_pandas().assign(name=name)
-                for name in ["baseline", "staff-baseline"]
-            ]
-        )
-        role_map = {"baseline": "Client", "staff-baseline": "Staff"}
-        baseline_df["role_in_project"] = baseline_df["name"].replace(role_map)
-        baseline_node_data = to_baseline_nodes(baseline_df)
-
-        self.sheepdog_package.resources.extend(baseline_node_data)
-
-    def _add_timepoints_to_sheepdog(self):
-        assert self.package.get_resource("baseline")
-
-        timepoints_df = self.package.get_resource("timepoints").to_pandas()
-
-        # get list of people not in baseline but in timepoints
-        isin_baseline = timepoints_df.index.get_level_values("jdc_person_id").isin(
-            baseline_df.index.get_level_values("jdc_person_id")
-        )
-        missing_ppl = timepoints_df.loc[~isin_baseline]
-
-        timestamp = time.time()
-        date_time = datetime.date.fromtimestamp(timestamp)
-        str_date_time = date_time.strftime("%Y%m%d")
-
-        Path(f"missing_participants_{str_date_time}.txt").open(mode="a").write(
-            f"Sheepdog upload at {str_date_time}:\n"
-            + "The following people are in time points but not in baseline"
-            + "and therefore not added to the time_points node in sheepdog model\n\n"
-            + "\n".join(missing_ppl.index.get_level_values("jdc_person_id"))
-        )
-        timepoints_df.loc[isin_baseline]
-        timepoints_node_data = to_time_point_nodes(timepoints_df)
-
-        if self.sheepdog_resources:
-            self.sheepdog_resources.extend((timepoints_node_data))
-        else:
-            raise Exception("Need to add parent nodes (from baseline resource) first")
-
-    def _map_to_sheepdog(
-        program,
-        project,
-        credentials_path,
-        sheepdog_resources=None,
-        node_list=None,
-        delete_first=True,
-    ):
-        """
-        Map core measure variables to existing sheepdog model
-
-        baseline_sheepdog_resource: pandas dataframe of logical representation (ie True/False boolean instead of Yes/No; all missing values are NA) of  validated core measure package
-        NOTE: the `current_project_status` column MUST be added as it is not a part of the core measures currently.
-        timepoints_sheepdog_resource: same as baseline_df but for the time points dataset
-        program: see map_to_sheepdog
-        project: see map_to_sheepdog
-        credentials_path: see map_to_sheepdog
-        node_list: see map_to_sheepdog
-        delete_first: see map_to_sheepdog
-        """
-
-        endpoint = "https://jcoin.datacommons.io/"
-
-        if not sheepdog_resources:
-            sheepdog_resources = self.sheepdog_resources
-        map_to_sheepdog(
-            sheepdog_dfs=sheepdog_resources,
-            endpoint=endpoint,
-            program=program,
-            project=project,
-            credentials_path=credentials_path,
-            node_list=node_list,
-            delete_first=delete_first,
-        )
-
     # user facing functions to build core measure data package, writing the package, and submitting to JDC
     def add_baseline(self, df_or_path):
         name = "baseline"
@@ -244,6 +106,50 @@ class CoreMeasures:
         schema = schemas.core_measures.staff_timepoints
         steps = self.transform_steps
         self._add_resource(df_or_path, name, schema, steps)
+
+    # NOTE: below are temporary and will change if DD becomes more like frictionelss
+    # core measure data model
+    def convert_baseline_to_sheepdog(self):
+        baseline_df = pd.concat(
+            [
+                self.package.get_resource(name).to_pandas().assign(name=name)
+                for name in ["baseline", "staff-baseline"]
+                if name in self.package.resource_names
+            ]
+        )
+        role_map = {"baseline": "Client", "staff-baseline": "Staff"}
+        baseline_df["role_in_project"] = baseline_df["name"].replace(role_map)
+        baseline_node_data = to_baseline_nodes(baseline_df)
+
+        self.sheepdog_package.resources.extend(baseline_node_data)
+
+    def convert_timepoints_to_sheepdog(self):
+        assert self.package.get_resource("baseline")
+        baseline_df = self.package.get_resource("baseline").to_pandas()
+        timepoints_df = self.package.get_resource("timepoints").to_pandas()
+
+        # get list of people not in baseline but in timepoints
+        # TODO: add
+        isin_baseline = timepoints_df.index.get_level_values("jdc_person_id").isin(
+            baseline_df.index.get_level_values("jdc_person_id")
+        )
+        missing_ppl = timepoints_df.loc[~isin_baseline]
+
+        timestamp = time.time()
+        date_time = datetime.date.fromtimestamp(timestamp)
+        str_date_time = date_time.strftime("%Y%m%d")
+
+        Path(f"missing_participants_{str_date_time}.txt").open(mode="a").write(
+            f"Sheepdog upload at {str_date_time}:\n"
+            + "The following people are in time points but not in baseline"
+            + "and therefore not added to the time_points node in sheepdog model\n\n"
+            + "\n".join(missing_ppl.index.get_level_values("jdc_person_id"))
+        )
+
+        timepoints_node_data = to_time_point_nodes(timepoints_df.loc[isin_baseline])
+
+        for resource in timepoints_node_data:
+            self.sheepdog_package.add_resource(resource)
 
     def write(self, outdir=None):
         """
@@ -423,14 +329,101 @@ class CoreMeasures:
             credentials_path=commons_credentials_path,
         )
 
-        self._convert_baseline_to_sheepdog()
-        self._convert_timepoints_to_sheepdog()
+    def map_to_sheepdog(
+        self,
+        commons_project_code,
+        commons_credentials_path,
+        node_list=None,
+        delete_first=True,
+    ):
+        """
+        Map core measure variables to existing sheepdog model
 
-        last_node_output = self._map_to_sheepdog(
+        sheepdog_package: package containing resources representing a gen3 node
+        NOTE: the `current_project_status` column MUST be added as it is not a part of the core measures currently.
+        timepoints_sheepdog_resource: same as baseline_df but for the time points dataset
+        program: see map_to_sheepdog
+        project: see map_to_sheepdog
+        credentials_path: see map_to_sheepdog
+        node_list: see map_to_sheepdog
+        delete_first: see map_to_sheepdog
+        """
+
+        endpoint = "https://jcoin.datacommons.io/"
+
+        self.convert_baseline_to_sheepdog()
+        self.convert_timepoints_to_sheepdog()
+
+        last_node_output = map_to_sheepdog(
+            sheepdog_package=self.sheepdog_package,
+            endpoint=endpoint,
             program="JCOIN",
             project=commons_project_code,
             credentials_path=commons_credentials_path,
+            node_list=node_list,
+            delete_first=delete_first,
         )
+
+    @staticmethod
+    def __add_new_names(df, schema):
+        fields = schema["fields"]
+        mappings = {
+            field["custom"]["jcoin:original_name"]: field["name"] for field in fields
+        }
+        return to_new_names(df=df, mappings=mappings)
+
+    @staticmethod
+    def __add_missing_fields(df, schema):
+        field_list = [field["name"] for field in schema["fields"]]
+        return add_missing_fields(df, field_list, missing_value="Missing")
+
+    # below are internal functions to be called by the user facing methods add_<resource name>() and submit()
+    def _add_resource(
+        self,
+        df_or_path,
+        name,
+        schema,
+        transform_steps=[
+            "add_new_names",
+            "add_missing_fields",
+            "replace_ids",
+            "shift_dates",
+        ],
+    ):
+        if isinstance(df_or_path, pd.DataFrame):
+            df = df_or_path
+        elif isinstance(df_or_path, (str, os.PathLike)):
+            df = Resource(path=str(df_or_path)).to_petl().todf()
+
+        deidentify_fxns = (
+            []
+        )  # have dependencies so are bundled together in its own wrapper function
+        fxns = []
+        for trans in transform_steps:
+            if trans == "add_new_names":
+                fxns.append((self.__add_new_names, {"schema": schema}))
+            elif trans == "add_missing_fields":
+                fxns.append((self.__add_missing_fields, {"schema": schema}))
+            elif trans == "replace_ids" or trans == "shift_dates":
+                deidentify_fxns.append(trans)
+
+        # if deidentify functions listed, add to the function list
+        if deidentify_fxns:
+            deidentify_params = {
+                "id_file": self.id_file,
+                "id_column": self.id_column,
+                "history_path": self.history_path,
+                "date_columns": self.date_columns,
+                "fxns": deidentify_fxns,
+            }
+            fxns.append((deidentify, deidentify_params))
+
+        # chain through selected functions
+        newdf = reduce(lambda _df, fxn: fxn[0](_df, **fxn[-1]), fxns, df)
+        # make resource
+        resource = Resource(name=name, data=newdf, schema=schema, format="pandas")
+
+        self.package.add_resource(resource)
 
 
 def _resolve_if_path(var):
