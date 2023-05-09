@@ -1,6 +1,5 @@
 """
-data commons transforms needed to map to sheepdog data model
-which are common across hubs/datasets
+data commons transforms needed to map to sheepdog data model from validated frictionless datasets
 """
 
 import pandas as pd

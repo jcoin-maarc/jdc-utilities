@@ -23,12 +23,12 @@ from dataforge.frictionless import encode_table
 # frictionless
 from frictionless import Package, Resource, transform, validate
 
-from jdc_utils import schemas
-from jdc_utils.encoding import core_measures as encodings
-from jdc_utils.submission.general import submit_package_to_jdc
+from jdc_utils.submission import submit_package_to_jdc
 from jdc_utils.transforms import add_missing_fields, deidentify, to_new_names
-from jdc_utils.transforms.sheepdog import to_baseline_nodes, to_time_point_nodes
 from jdc_utils.utils import map_to_sheepdog, read_package, zip_package
+
+from . import encodings, schemas
+from .sheepdog import to_baseline_nodes, to_time_point_nodes
 
 
 class CoreMeasures:
@@ -51,6 +51,13 @@ class CoreMeasures:
         (if none, will default to all date column types in df. if no date column types, then will not convert anything)
     outdir: Optional[str]
         Directory to write core measure package
+    transform_steps: the transformation functions to be applied (and the order of) upon adding a data resource.
+        Currently available functions include: [
+            "add_new_names",
+            "add_missing_fields",
+            "replace_ids",
+            "shift_dates",
+        ],
     """
 
     def __init__(
@@ -85,25 +92,25 @@ class CoreMeasures:
     # user facing functions to build core measure data package, writing the package, and submitting to JDC
     def add_baseline(self, df_or_path):
         name = "baseline"
-        schema = schemas.core_measures.baseline
+        schema = schemas.baseline
         steps = self.transform_steps
         self._add_resource(df_or_path, name, schema, steps)
 
     def add_timepoints(self, df_or_path):
         name = "timepoints"
-        schema = schemas.core_measures.timepoints
+        schema = schemas.timepoints
         steps = self.transform_steps
         self._add_resource(df_or_path, name, schema, steps)
 
     def add_staff_baseline(self, df_or_path):
         name = "staff-baseline"
-        schema = schemas.core_measures.staff_baseline
+        schema = schemas.staff_baseline
         steps = self.transform_steps
         self._add_resource(df_or_path, name, schema, steps)
 
     def add_staff_timepoints(self, df_or_path):
         name = "staff-timepoints"
-        schema = schemas.core_measures.staff_timepoints
+        schema = schemas.staff_timepoints
         steps = self.transform_steps
         self._add_resource(df_or_path, name, schema, steps)
 
