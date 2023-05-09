@@ -3,13 +3,9 @@ Generate,validate, and submit a core measure data package
 """
 import copy
 import datetime
-
-# get schemas and validate files, creating report,writing datasets, and package metadata
 import os
 import re
 import time
-
-# base python utils
 from collections import abc
 from functools import reduce
 from pathlib import Path
@@ -23,10 +19,15 @@ from dataforge.frictionless import encode_table
 # frictionless
 from frictionless import Package, Resource, transform, validate
 
+# general functions
 from jdc_utils.submission import submit_package_to_jdc
 from jdc_utils.transforms import add_missing_fields, deidentify, to_new_names
-from jdc_utils.utils import map_to_sheepdog, read_package, zip_package
 
+# general utilities
+from jdc_utils.utils.gen3 import map_to_sheepdog
+from jdc_utils.utils.packaging import read_package, zip_package
+
+# core measure modules
 from . import encodings, schemas
 from .sheepdog import to_baseline_nodes, to_time_point_nodes
 
