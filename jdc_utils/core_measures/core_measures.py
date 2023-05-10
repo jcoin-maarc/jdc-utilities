@@ -327,15 +327,32 @@ class CoreMeasures:
         else:
             self.zip()
 
-        # submit the zipped package to JDC
-        gen3_file = submit_package_to_jdc(
-            package_path=self.zipped_package_path,
-            commons_project=commons_project_code,
-            file_guid=commons_file_guid,
-            sheepdog_file_submitter_id=commons_file_submitter_id,
-            submission_type="update",
-            credentials_path=commons_credentials_path,
-        )
+        if commons_file_guid:
+            confirmation = input(
+                f"Submit an updated version of an existing data package with {commons_file_guid}? Y/N"
+            )
+            submission_type = "update"
+        else:
+            confirmation = input(f"Submit a new file? Y/N")
+            submission_type = "create"
+            assert (
+                commons_file_guid
+            ), "To update an existing data package, you need the file_guid attached to the package"
+
+        if confirmation.strip().lower() == "y":
+            # submit the zipped package to JDC
+            gen3_file = submit_package_to_jdc(
+                package_path=self.zipped_package_path,
+                commons_project=commons_project_code,
+                file_guid=commons_file_guid,
+                sheepdog_file_submitter_id=commons_file_submitter_id,
+                submission_type=submission_type,
+                credentials_path=commons_credentials_path,
+            )
+
+            self.map_to_sheepdog(commons_project_code, commons_credentials_path)
+        elif confirmation.strip().lower() == "n":
+            raise Exception("Aborted JDC submission process")
 
     def map_to_sheepdog(
         self,
@@ -359,8 +376,9 @@ class CoreMeasures:
 
         endpoint = "https://jcoin.datacommons.io/"
 
-        self.convert_baseline_to_sheepdog()
-        self.convert_timepoints_to_sheepdog()
+        if not self.sheepdog_package:
+            self.convert_baseline_to_sheepdog()
+            self.convert_timepoints_to_sheepdog()
 
         last_node_output = map_to_sheepdog(
             sheepdog_package=self.sheepdog_package,
