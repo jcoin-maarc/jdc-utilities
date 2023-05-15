@@ -166,7 +166,7 @@ def deidentify(
         )
     if "shift_dates" in fxns:
         if "replace_ids" in fxns:
-            id_column = pd.read_csv(self.id_file).squeeze().name
+            id_column = pd.read_csv(id_file).squeeze().name
 
         df = shift_dates(
             df,
