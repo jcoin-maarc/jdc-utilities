@@ -127,6 +127,9 @@ class CoreMeasures:
         )
         role_map = {"baseline": "Client", "staff-baseline": "Staff"}
         baseline_df["role_in_project"] = baseline_df["name"].replace(role_map)
+        baseline_df["projects"] = [
+            {"code": self.commons_project_code} for _ in range(len(baseline_df))
+        ]  # protocol node was removed
         baseline_node_data = to_baseline_nodes(baseline_df)
 
         self.sheepdog_package.resources.extend(baseline_node_data)
@@ -360,6 +363,7 @@ class CoreMeasures:
         commons_credentials_path,
         node_list=None,
         delete_first=True,
+        endpoint="https://jcoin.datacommons.io/",
     ):
         """
         Map core measure variables to existing sheepdog model
@@ -373,8 +377,6 @@ class CoreMeasures:
         node_list: see map_to_sheepdog
         delete_first: see map_to_sheepdog
         """
-
-        endpoint = "https://jcoin.datacommons.io/"
 
         if not self.sheepdog_package:
             self.convert_baseline_to_sheepdog()

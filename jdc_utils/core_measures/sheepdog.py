@@ -37,7 +37,7 @@ recode_map = {
         "Genderqueer/gender nonconforming/neither exclusively male nor female": "Gender nonconforming",
         "Additional gender category (or other)": "Something else",
     },
-    "current_study_status": {"Unknown": "On study"},
+    # "current_study_status": {"Unknown": "On study"},
 }
 
 
@@ -66,13 +66,11 @@ def to_participant_node(baseline_df):
 
     node_df = pd.DataFrame(
         {
-            "protocols.submitter_id": "main",
+            "projects": baseline_df["projects"],
             "submitter_id": baseline_df.index.get_level_values("jdc_person_id"),
             "role_in_project": baseline_df["role_in_project"],
             "quarter_recruited": baseline_df["quarter_enrolled"],
-            "current_client_status": baseline_df["current_study_status"].replace(
-                recode_map["current_study_status"]
-            ),
+            "current_client_status": baseline_df["current_study_status"],
         }
     )
     return node_df.set_index("submitter_id")
