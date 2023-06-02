@@ -257,6 +257,7 @@ def map_to_sheepdog(
     sheepdog_params = dict(
         program=program, project=project, credentials_path=credentials_path
     )
+    # delete the nodes from list that you don't want to upload
     if node_list:
         initial_node_list = list(sheepdog_package.resource_names)
         for node_name in initial_node_list:
@@ -274,7 +275,7 @@ def map_to_sheepdog(
         node_report = node.validate(df=node_df)
         if not node_report["valid"]:
             invalid_nodes += 1
-            print("{node.type} invalid")
+            print(f"{node.type} invalid")
             Path("tmp/sheepdog").mkdir(exist_ok=True, parents=True)
             Path(f"tmp/sheepdog/invalid-{node.type}-report-summary.txt").write_text(
                 node_report.to_summary()

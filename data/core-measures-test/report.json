@@ -1,6 +1,6 @@
 {
   "version": "4.40.8",
-  "time": 0.306,
+  "time": 0.314,
   "errors": [],
   "tasks": [
     {
@@ -583,14 +583,14 @@
         "format": "csv",
         "hashing": "md5",
         "stats": {
-          "hash": "1500908729dca9b384f366206f794ea3",
-          "bytes": 1733,
+          "hash": "dcd429e2215b602d0a52dc6ff7570072",
+          "bytes": 2018,
           "fields": 37,
-          "rows": 4
+          "rows": 5
         },
         "encoding": "utf-8"
       },
-      "time": 0.044,
+      "time": 0.043,
       "scope": [
         "hash-count-error",
         "byte-count-error",
@@ -652,6 +652,20 @@
               "constraints": {
                 "required": true,
                 "minimum": 1
+              }
+            },
+            {
+              "custom": {
+                "jcoin:core_measure_section": "Record and linkage",
+                "jcoin:original_name": "visit_month"
+              },
+              "name": "visit_month",
+              "title": "Visit Month",
+              "type": "string",
+              "description": "Marks the intended visit time point. For example, if the baseline visit, this should be populated as Baseline.\\n If a follow up, this should be populated as the Month and month number (eg., for a study with a Baseline and 3,6, and 12 month follow ups the values should be Baseline, Month 3, Month 6, Month 12, respectively.\\nIMPORTANT: this field represents the intended month in the study design.\\nSo, for example, if a participant comes back 2 months after Baseline for the Month 1 follow up, this field should still be populated with Month 1.",
+              "constraints": {
+                "required": true,
+                "pattern": "^Baseline$|^Month \\d+$"
               }
             },
             {
@@ -4095,14 +4109,14 @@
         "format": "csv",
         "hashing": "md5",
         "stats": {
-          "hash": "a593a20dee578ba0b3db7291894485b1",
-          "bytes": 27358,
-          "fields": 241,
+          "hash": "de06daf06c1acb6d6519ea622d58ac61",
+          "bytes": 27464,
+          "fields": 242,
           "rows": 11
         },
         "encoding": "utf-8"
       },
-      "time": 0.18,
+      "time": 0.188,
       "scope": [
         "hash-count-error",
         "byte-count-error",

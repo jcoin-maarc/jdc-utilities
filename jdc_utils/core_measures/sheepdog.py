@@ -29,7 +29,7 @@ race_map = {
 }
 
 recode_map = {
-    "visit_type": {"Baseline": "Baseline Visit", "Follow-up": "Follow-up Visit"},
+    # "visit_type": {"Baseline": "Baseline Visit", "Follow-up": "Follow-up Visit"},
     "hispanic_latino": {True: "Yes", False: "No"},
     "gender_id": {
         "Transgender man/trans man/female-to-male (FTM)": "Transgender",
@@ -66,17 +66,18 @@ def to_participant_node(baseline_df):
 
     node_df = pd.DataFrame(
         {
-            "projects": baseline_df["projects"],
+            "projects.code": baseline_df["projects.code"],
             "submitter_id": baseline_df.index.get_level_values("jdc_person_id"),
             "role_in_project": baseline_df["role_in_project"],
-            "quarter_recruited": baseline_df["quarter_enrolled"],
-            "current_client_status": baseline_df["current_study_status"],
+            "quarter_enrolled": baseline_df["quarter_enrolled"],
+            "state_of_enrollment": baseline_df["state_of_site_enrollment"],
+            "current_study_status": baseline_df["current_study_status"],
         }
     )
     return node_df.set_index("submitter_id")
 
 
-def to_demographic_baseline_node(baseline_df):
+def to_demographic_node(baseline_df):
     submitter_id = baseline_df.index.get_level_values("jdc_person_id")
     node_df = pd.DataFrame(
         {
@@ -109,7 +110,8 @@ def to_time_point_node(time_point_df):
         {
             "participants.submitter_id": get_lvl("jdc_person_id"),
             "submitter_id": submitter_id,
-            "visit_type": time_point_df["visit_type"].replace(recode_map["visit_type"]),
+            "visit_type": time_point_df["visit_type"],
+            "visit_month": time_point_df["visit_month"],
         }
     )
     return node_df.set_index("submitter_id")
@@ -121,8 +123,8 @@ def _to_baseline_nodes(baseline_df, role):
         {"name": "participant", "data": participant},
         {"name": "enrollment", "data": to_enrollment_node(baseline_df)},
         {
-            "name": "demographic_baseline",
-            "data": to_demographic_baseline_node(baseline_df),
+            "name": "demographic",
+            "data": to_demographic_node(baseline_df),
         },
     ]
     return [Resource(**resource, format="pandas") for resource in resources]

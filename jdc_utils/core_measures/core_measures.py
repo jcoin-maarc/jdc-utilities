@@ -127,9 +127,9 @@ class CoreMeasures:
         )
         role_map = {"baseline": "Client", "staff-baseline": "Staff"}
         baseline_df["role_in_project"] = baseline_df["name"].replace(role_map)
-        baseline_df["projects"] = [
-            {"code": self.commons_project_code} for _ in range(len(baseline_df))
-        ]  # protocol node was removed
+        baseline_df[
+            "projects.code"
+        ] = self.commons_project_code  # protocol node was removed
         baseline_node_data = to_baseline_nodes(baseline_df)
 
         self.sheepdog_package.resources.extend(baseline_node_data)
@@ -363,6 +363,7 @@ class CoreMeasures:
         commons_credentials_path,
         node_list=None,
         delete_first=True,
+        commons_program="JCOIN",
         endpoint="https://jcoin.datacommons.io/",
     ):
         """
@@ -385,7 +386,7 @@ class CoreMeasures:
         last_node_output = map_to_sheepdog(
             sheepdog_package=self.sheepdog_package,
             endpoint=endpoint,
-            program="JCOIN",
+            program=commons_program,
             project=commons_project_code,
             credentials_path=commons_credentials_path,
             node_list=node_list,
