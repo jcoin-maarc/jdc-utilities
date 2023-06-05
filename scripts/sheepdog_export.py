@@ -1,3 +1,8 @@
+"""
+exports all records from the sheepdog database
+in the JDC
+"""
+
 from pathlib import Path
 
 from gen3.auth import Gen3Auth
@@ -13,7 +18,7 @@ from gen3.submission import Gen3Submission
 # FUTURE:
 # TODO: to core measure packages: add visit_month (sheepdog mapping all ready)
 # TODO:add core_metadata_collection.date_file_uploaded NOTE: will do for new uploads
-option = "delete"
+option = "export"
 PROD_CREDENTIALS_PATH = f"{Path(__file__).parents[1].as_posix()}/credentials.json"
 PROD_COMMONS_URL = "https://jcoin.datacommons.io"
 auth = Gen3Auth(endpoint=PROD_COMMONS_URL, refresh_file=PROD_CREDENTIALS_PATH)
@@ -44,5 +49,5 @@ for program in programs:
             elif option == "delete":
                 print(f"Deleting {program_name},{project_name},{node_name}")
                 node_tsv = sub.delete_node(
-                    program="JCOIN", project=project_name, node_type=node_name
+                    program=program_name, project=project_name, node_type=node_name
                 )
