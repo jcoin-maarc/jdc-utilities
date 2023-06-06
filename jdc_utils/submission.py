@@ -10,6 +10,8 @@ def submit_package_to_jdc(
     sheepdog_data_category=None,
     sheepdog_data_format=None,
     sheepdog_data_type=None,
+    sheepdog_other_cmc_node_metadata=None,
+    sheepdog_other_file_node_metadata=None,
     credentials_path="credentials.json",
     submission_type="update",
 ):
@@ -58,10 +60,13 @@ def submit_package_to_jdc(
             and sheepdog_data_type
         )
         assert has_sheepdog_metadata, "Need to add sheepdog file metadata"
+
         output = gen3file_update.create(
             data_category=sheepdog_data_category,
             data_format=sheepdog_data_format,
             data_type=sheepdog_data_type,
+            other_cmc_node_metadata=sheepdog_other_cmc_node_metadata,
+            other_file_node_metadata=sheepdog_other_file_node_metadata,
         )
 
     return gen3file_update

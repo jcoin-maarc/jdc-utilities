@@ -301,11 +301,12 @@ class CoreMeasures:
         gen3_file = submit_package_to_jdc(
             package_path=zip_path,
             commons_project=commons_project,
-            commons_file_submitter_id=commons_file_submitter_id,
+            sheepdog_file_submitter_id=commons_file_submitter_id,
             sheepdog_data_type="Interview",
             sheepdog_data_category="Core Measures",
             sheepdog_data_format="ZIP",
             submission_type="create",
+            sheepdog_other_cmc_node_metadata={"title": "Core Measures"},
             credentials_path=credentials_path,
         )
         ```
@@ -338,9 +339,9 @@ class CoreMeasures:
         else:
             confirmation = input(f"Submit a new file? Y/N")
             submission_type = "create"
-            assert (
-                commons_file_guid
-            ), "To update an existing data package, you need the file_guid attached to the package"
+            # assert (
+            #     commons_file_guid
+            # ), "To update an existing data package, you need the file_guid attached to the package"
 
         if confirmation.strip().lower() == "y":
             # submit the zipped package to JDC
