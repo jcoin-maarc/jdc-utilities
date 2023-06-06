@@ -354,6 +354,7 @@ class CoreMeasures:
                 credentials_path=commons_credentials_path,
             )
 
+            self.commons_project_code = commons_project_code
             self.map_to_sheepdog(commons_project_code, commons_credentials_path)
         elif confirmation.strip().lower() == "n":
             raise Exception("Aborted JDC submission process")
@@ -379,7 +380,7 @@ class CoreMeasures:
         node_list: see map_to_sheepdog
         delete_first: see map_to_sheepdog
         """
-
+        self.commons_project_code = commons_project_code
         if not self.sheepdog_package:
             self.convert_baseline_to_sheepdog()
             self.convert_timepoints_to_sheepdog()
