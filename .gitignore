@@ -63,3 +63,4 @@ NOTES.md
 *credentials.json
 *credentials_qa.json
 notebooks/dev/core-measure-projects.yaml
+scripts/local/
