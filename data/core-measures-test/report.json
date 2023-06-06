@@ -1,6 +1,6 @@
 {
   "version": "4.40.8",
-  "time": 0.314,
+  "time": 0.491,
   "errors": [],
   "tasks": [
     {
@@ -590,7 +590,7 @@
         },
         "encoding": "utf-8"
       },
-      "time": 0.043,
+      "time": 0.067,
       "scope": [
         "hash-count-error",
         "byte-count-error",
@@ -665,7 +665,7 @@
               "description": "Marks the intended visit time point. For example, if the baseline visit, this should be populated as Baseline.\\n If a follow up, this should be populated as the Month and month number (eg., for a study with a Baseline and 3,6, and 12 month follow ups the values should be Baseline, Month 3, Month 6, Month 12, respectively.\\nIMPORTANT: this field represents the intended month in the study design.\\nSo, for example, if a participant comes back 2 months after Baseline for the Month 1 follow up, this field should still be populated with Month 1.",
               "constraints": {
                 "required": true,
-                "pattern": "^Baseline$|^Month \\d+$"
+                "pattern": "^Baseline$|^\\d+ month$"
               }
             },
             {
@@ -4109,14 +4109,14 @@
         "format": "csv",
         "hashing": "md5",
         "stats": {
-          "hash": "de06daf06c1acb6d6519ea622d58ac61",
-          "bytes": 27464,
+          "hash": "13eddbae71f39b2d1d78f91e014ae263",
+          "bytes": 27463,
           "fields": 242,
           "rows": 11
         },
         "encoding": "utf-8"
       },
-      "time": 0.188,
+      "time": 0.305,
       "scope": [
         "hash-count-error",
         "byte-count-error",
