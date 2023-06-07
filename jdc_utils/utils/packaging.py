@@ -27,9 +27,10 @@ def _write_to_zip(input_path, zip_object):
         relative_path = path.relative_to(input_path)
         if path.is_file():
             zip_object.write(path, relative_path)
+        elif path.is_dir():
+            zip_object.mkdir(relative_path)
         else:
-            # zip_object.mkdir(relative_dir) #ZipFile.mkdir only supported starting in python 3.11
-            _write_to_zip(path, zip_object)
+            raise Exception("Something went wrong with zipping")
 
 
 # packaging
@@ -92,6 +93,10 @@ def zip_package(pkg_path, zip_path):
     outzip_path = Path(zip_path).resolve() / pkg_path.with_suffix(".zip").name
 
     with ZipFile(outzip_path, "w") as pkg_zip:
-        _write_to_zip(pkg_path, pkg_zip)
+        input_contents = Path(pkg_path).resolve().glob("*")
 
+        for path in input_contents:
+            # relative directory to write dir/file within zip
+            relative_path = path.relative_to(pkg_path)
+            pkg_zip.write(path, relative_path)
     return outzip_path
