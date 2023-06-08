@@ -94,9 +94,10 @@ def zip_package(pkg_path, zip_path):
 
     with ZipFile(outzip_path, "w") as pkg_zip:
         input_contents = Path(pkg_path).resolve().glob("*")
-
-        for path in input_contents:
-            # relative directory to write dir/file within zip
-            relative_path = path.relative_to(pkg_path)
-            pkg_zip.write(path, relative_path)
+        for root, _, files in os.walk(pkg_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                # relative directory to write dir/file within zip
+                relative_path = Path(file_path).relative_to(pkg_path)
+                pkg_zip.write(file_path, relative_path)
     return outzip_path
