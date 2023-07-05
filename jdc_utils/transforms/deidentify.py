@@ -125,14 +125,17 @@ def shift_dates(df, id_column, date_columns, history_path, seed=None):
         seed=seed,
     )
 
-    date_columns = [date_columns] if isinstance(date_columns, str) else date_columns
+    if isinstance(date_columns, str):
+        date_columns = [date_columns]
+    elif isinstance(date_columns, tuple):
+        date_columns = list(date_columns)
 
     for col in date_columns:
         if not col in list(df):
             print(f"{col} not in dataframe so removing from the date column list")
             date_columns.remove(col)
         else:
-            df[col] = pd.to_datetime(df[col])
+            df[col] = pd.to_datetime(df[col], errors="coerce")
 
     # shift the dates with saved offsets
     df_new = tools.shift_dates(
