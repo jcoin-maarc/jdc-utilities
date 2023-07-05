@@ -429,14 +429,15 @@ class CoreMeasures:
         deidentify_fxns = (
             []
         )  # have dependencies so are bundled together in its own wrapper function
-        fxns = []
+        fxns = {}  # NOTE: dicts are ordered now in python
         for trans in transform_steps:
             if trans == "add_new_names":
-                fxns.append((self.__add_new_names, {"schema": schema}))
+                fxns[trans] = (self.__add_new_names, {"schema": schema})
             elif trans == "add_missing_fields":
-                fxns.append((self.__add_missing_fields, {"schema": schema}))
+                fxns[trans] = (self.__add_missing_fields, {"schema": schema})
             elif trans == "replace_ids" or trans == "shift_dates":
                 deidentify_fxns.append(trans)
+                fxns["deidentify"] = None
 
         # if deidentify functions listed, add to the function list
         if deidentify_fxns:
@@ -447,10 +448,10 @@ class CoreMeasures:
                 "date_columns": self.date_columns,
                 "fxns": deidentify_fxns,
             }
-            fxns.append((deidentify, deidentify_params))
+            fxns["deidentify"] = (deidentify, deidentify_params)
 
         # chain through selected functions
-        newdf = reduce(lambda _df, fxn: fxn[0](_df, **fxn[-1]), fxns, df)
+        newdf = reduce(lambda _df, fxn: fxn[0](_df, **fxn[-1]), fxns.values(), df)
         # make resource
         resource = Resource(name=name, data=newdf, schema=schema, format="pandas")
 
