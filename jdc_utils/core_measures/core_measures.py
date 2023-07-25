@@ -28,8 +28,7 @@ from jdc_utils.utils.gen3 import map_to_sheepdog
 from jdc_utils.utils.packaging import read_package, zip_package
 
 # core measure modules
-from . import encodings, schemas
-from .sheepdog import to_baseline_nodes, to_time_point_nodes
+from . import encodings, schemas, sheepdog, derived_measures
 
 
 class CoreMeasures:
@@ -95,25 +94,34 @@ class CoreMeasures:
         name = "baseline"
         schema = schemas.baseline
         steps = self.transform_steps
-        self._add_resource(df_or_path, name, schema, steps)
+        resource = self._generate_resource(df_or_path, name, schema, steps)
+
+        # derived measures
+        # TODO: race
+        self.package.add_resource(resource)
 
     def add_timepoints(self, df_or_path):
         name = "timepoints"
         schema = schemas.timepoints
         steps = self.transform_steps
-        self._add_resource(df_or_path, name, schema, steps)
+        resource = self._generate_resource(df_or_path, name, schema, steps)
+        # derived measures
+        resource.data = derived_measures.promis.compute_scores(resource)
+        self.package.add_resource(resource)
 
     def add_staff_baseline(self, df_or_path):
         name = "staff-baseline"
         schema = schemas.staff_baseline
         steps = self.transform_steps
-        self._add_resource(df_or_path, name, schema, steps)
+        resource = self._generate_resource(df_or_path, name, schema, steps)
+        self.package.add_resource(resource)
 
     def add_staff_timepoints(self, df_or_path):
         name = "staff-timepoints"
         schema = schemas.staff_timepoints
         steps = self.transform_steps
-        self._add_resource(df_or_path, name, schema, steps)
+        resource = self._generate_resource(df_or_path, name, schema, steps)
+        self.package.add_resource(resource)
 
     # NOTE: below are temporary and will change if DD becomes more like frictionelss
     # core measure data model
@@ -130,7 +138,7 @@ class CoreMeasures:
         baseline_df[
             "projects.code"
         ] = self.commons_project_code  # protocol node was removed
-        baseline_node_data = to_baseline_nodes(baseline_df)
+        baseline_node_data = sheepdog.to_baseline_nodes(baseline_df)
 
         self.sheepdog_package.resources.extend(baseline_node_data)
 
@@ -157,7 +165,9 @@ class CoreMeasures:
             + "\n".join(missing_ppl.index.get_level_values("jdc_person_id"))
         )
 
-        timepoints_node_data = to_time_point_nodes(timepoints_df.loc[isin_baseline])
+        timepoints_node_data = sheepdog.to_time_point_nodes(
+            timepoints_df.loc[isin_baseline]
+        )
 
         for resource in timepoints_node_data:
             self.sheepdog_package.add_resource(resource)
@@ -409,7 +419,7 @@ class CoreMeasures:
         return add_missing_fields(df, field_list, missing_value="Missing")
 
     # below are internal functions to be called by the user facing methods add_<resource name>() and submit()
-    def _add_resource(
+    def _generate_resource(
         self,
         df_or_path,
         name,
@@ -454,8 +464,7 @@ class CoreMeasures:
         newdf = reduce(lambda _df, fxn: fxn[0](_df, **fxn[-1]), fxns.values(), df)
         # make resource
         resource = Resource(name=name, data=newdf, schema=schema, format="pandas")
-
-        self.package.add_resource(resource)
+        return resource
 
 
 def _resolve_if_path(var):
