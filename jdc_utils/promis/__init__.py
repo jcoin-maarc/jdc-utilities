@@ -143,7 +143,7 @@ def _sum_scores(df):
         ],
     )
     sum_cols_if_no_missing = lambda colnames: df[colnames].sum(
-        axis=1, min_count=len(cols)
+        axis=1, min_count=len(colnames)
     )
 
     for sumname, colnames in cols.items():
@@ -175,19 +175,14 @@ def compute_scores(resource) -> pd.DataFrame:
         t_slp=tscores["sleep"],
         t_sr=tscores["social"],
         t_ax=tscores["anxiety"],
-        # t_cog=tscores["cognitive"],
-        score_pi=tscores["global_pain"],
+        t_cog=tscores["cognitive"],
+        # score_pi=tscores["global_pain"],
     )
     # return a copy of the resource data (dataframe) of utility scores
     # PROPr, (cognition_utility, depression_utility, fatigue_utility, pain_utility, physical_utility, sleep_utility, social_utility)
-    if hasattr(resource, "data"):
-        target = resource.data.copy()
-    else:
-        target = resource.to_petl().todf()
-
-    target = source.copy()
+    target = resource.to_petl().todf()
     target["PROPr"] = scores["PROPr"]
-    target["cognition_utility"] = scores["cognitive_utility"]
+    target["cognitive_utility"] = scores["cognitive_utility"]
     target["depression_utility"] = scores["depression_utility"]
     target["fatigue_utility"] = scores["fatigue_utility"]
     target["pain_utility"] = scores["pain_utility"]
