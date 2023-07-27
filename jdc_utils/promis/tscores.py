@@ -1,4 +1,3 @@
-
 raw_to_tscore_map = {
     "physical": {
         4: 22.5,

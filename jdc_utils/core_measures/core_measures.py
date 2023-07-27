@@ -28,7 +28,7 @@ from jdc_utils.utils.gen3 import map_to_sheepdog
 from jdc_utils.utils.packaging import read_package, zip_package
 
 # core measure modules
-from . import encodings, schemas, sheepdog, derived_measures
+from . import derived_measures, encodings, schemas, sheepdog
 
 
 class CoreMeasures:
@@ -105,8 +105,6 @@ class CoreMeasures:
         schema = schemas.timepoints
         steps = self.transform_steps
         resource = self._generate_resource(df_or_path, name, schema, steps)
-        # derived measures
-        resource.data = derived_measures.promis.compute_scores(resource)
         self.package.add_resource(resource)
 
     def add_staff_baseline(self, df_or_path):
