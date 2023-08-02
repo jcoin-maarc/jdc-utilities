@@ -170,6 +170,8 @@ class CoreMeasures:
         """
         if outdir:
             self.outdir = outdir
+        else:
+            outdir = self.outdir
 
         self.written_package = Package()
         Path(outdir).mkdir(exist_ok=True, parents=True)
@@ -398,9 +400,7 @@ class CoreMeasures:
     @staticmethod
     def __add_new_names(df, schema):
         fields = schema["fields"]
-        mappings = {
-            field["custom"]["jcoin:original_name"]: field["name"] for field in fields
-        }
+        mappings = {field["original_name"]: field["name"] for field in fields}
         return to_new_names(df=df, mappings=mappings)
 
     @staticmethod
@@ -431,7 +431,7 @@ class CoreMeasures:
         )  # have dependencies so are bundled together in its own wrapper function
         fxns = {}  # NOTE: dicts are ordered now in python
         for trans in transform_steps:
-            if trans == "add_new_names":
+            if trans == "add_new_names" or trans == "sync_new_names":
                 fxns[trans] = (self.__add_new_names, {"schema": schema})
             elif trans == "add_missing_fields":
                 fxns[trans] = (self.__add_missing_fields, {"schema": schema})
