@@ -197,7 +197,7 @@ def init_version_history(file_history_path, overwrite=False):
     return repo
 
 
-def init_version_history_all(history_path, overwrite=False):
+def init_version_history_all(history_path, overwrite=False,**kwargs):
     history_path = Path(history_path)
 
     if not Path(history_path).exists():
