@@ -1,0 +1,594 @@
+{
+  "title": "Client participants: Baseline measures",
+  "description": "Measures collected before the start of the study for client participants. As many of these measures are collected at 'baseline' it is currently called 'baseline.' However, this is a slight misnomer as, for example, current_study_status is dynamically updated.",
+  "fields": [
+    {
+      "module": "Record and linkage",
+      "name": "jdc_person_id",
+      "title": "JCOIN data commons person identifier",
+      "type": "string",
+      "description": "The generated unique identifier specific to the JCOIN Data Commons for a given individual (client or staff).",
+      "original_name": "jdc_person_id",
+      "constraints": {
+        "required": true,
+        "maxLength": 9,
+        "pattern": "[A-Z][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]"
+      }
+    },
+    {
+      "module": "Enrollment",
+      "name": "quarter_enrolled",
+      "title": "Quarter Enrolled",
+      "type": "string",
+      "description": "The financial quarter and year of enrollment",
+      "original_name": "quarter_enrolled",
+      "constraints": {
+        "required": true,
+        "maxLength": 6,
+        "pattern": "[0-9][0-9][0-9][0-9]Q[0-9]"
+      }
+    },
+    {
+      "module": "Enrollment",
+      "name": "state_of_site_enrollment",
+      "title": "State of Site For Enrollment",
+      "type": "string",
+      "description": "The U.S. State abbreviation of the site where client (participant) was initially enrolled",
+      "original_name": "state_of_site_enrollment",
+      "constraints": {
+        "required": true,
+        "maxLength": 2,
+        "pattern": "[A-Z][A-Z]"
+      }
+    },
+    {
+      "module": "Enrollment",
+      "name": "current_study_status",
+      "title": "Current Study Status",
+      "type": "any",
+      "description": "A summary of the current status where client (participant) is in study",
+      "constraints": {
+        "enum": [
+          1,
+          2,
+          3,
+          4,
+          "Unknown"
+        ],
+        "required": true
+      },
+      "original_name": "current_study_status",
+      "encoding": {
+        "1": "On study",
+        "2": "Dropped out",
+        "3": "Withdrawn by investigator",
+        "4": "Completed study"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "age",
+      "title": "Age",
+      "type": "integer",
+      "description": "About how old are you? (top coded at 90)",
+      "original_name": "d1a"
+    },
+    {
+      "module": "Demographics",
+      "name": "sex_at_birth",
+      "title": "Sex at birth",
+      "type": "any",
+      "description": "What sex was originally listed on your birth certificate?",
+      "constraints": {
+        "enum": [
+          1,
+          2,
+          "Decline to answer",
+          99
+        ]
+      },
+      "original_name": "o1",
+      "encoding": {
+        "1": "Male",
+        "2": "Female",
+        "99": "Something else"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "gender_id",
+      "title": "Gender Identity",
+      "type": "any",
+      "description": "What is your gender identity?",
+      "constraints": {
+        "enum": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          "Not reported"
+        ]
+      },
+      "original_name": "o2",
+      "notes": "For gender/orientation/identity, use items O1-O2 if possible, otherwise use D4a-D4c.   [Must use one or the other.]\n False if not 'Male' and not 'Transfgender' else True",
+      "encoding": {
+        "1": "Male",
+        "2": "Female",
+        "3": "Transgender man/trans man/female-to-male (FTM)",
+        "4": "Transgender woman/trans woman/male-to-female (MTF)",
+        "5": "Genderqueer/gender nonconforming/neither exclusively male nor female",
+        "6": "Additional gender category (or other)"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "gender_id_condensed",
+      "title": "Gender Identity (condensed)",
+      "type": "any",
+      "description": "What is your gender identity?",
+      "constraints": {
+        "enum": [
+          1,
+          2,
+          3,
+          4,
+          99,
+          "Not reported"
+        ]
+      },
+      "original_name": "d4b",
+      "notes": "For gender/orientation/identity, use items O1-O2 if possible, otherwise use D4a-D4c.   [Must use one or the other.]",
+      "encoding": {
+        "1": "Male",
+        "2": "Female",
+        "3": "Transgender",
+        "4": "Gender nonconforming",
+        "99": "Something else"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "race_white",
+      "title": "Race: White",
+      "type": "any",
+      "description": "[White] What is your race? SELECT ALL THAT APPLY",
+      "trueValues": [
+        "Yes"
+      ],
+      "falseValues": [
+        "No"
+      ],
+      "original_name": "d3_white",
+      "constraints": {
+        "required": true
+      },
+      "encoding": {
+        "0": "No",
+        "1": "Yes"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "race_black",
+      "title": "Race: Black or African American",
+      "type": "any",
+      "description": "[Black or African American] What is your race? SELECT ALL THAT APPLY",
+      "trueValues": [
+        "Yes"
+      ],
+      "falseValues": [
+        "No"
+      ],
+      "original_name": "d3_black",
+      "constraints": {
+        "required": true
+      },
+      "encoding": {
+        "0": "No",
+        "1": "Yes"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "race_AIAN",
+      "title": "Race: American Indian or Alaska Native",
+      "type": "any",
+      "description": "[American Indian or Alaska Native] What is your race? SELECT ALL THAT APPLY",
+      "trueValues": [
+        "Yes"
+      ],
+      "falseValues": [
+        "No"
+      ],
+      "original_name": "d3_american_indian",
+      "constraints": {
+        "required": true
+      },
+      "encoding": {
+        "0": "No",
+        "1": "Yes"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "race_hawaiian_OPI",
+      "title": "Race: Native Hawaiian or Other Pacific Islander",
+      "type": "any",
+      "description": "[Native Hawaiian or Other Pacific Islander] What is your race? SELECT ALL THAT APPLY",
+      "trueValues": [
+        "Yes"
+      ],
+      "falseValues": [
+        "No"
+      ],
+      "original_name": "d3_hawaiian",
+      "constraints": {
+        "required": true
+      },
+      "encoding": {
+        "0": "No",
+        "1": "Yes"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "race_asian",
+      "title": "Race: Asian",
+      "type": "any",
+      "description": "[Asian] What is your race? SELECT ALL THAT APPLY",
+      "trueValues": [
+        "Yes"
+      ],
+      "falseValues": [
+        "No"
+      ],
+      "original_name": "d3_asian",
+      "constraints": {
+        "required": true
+      },
+      "encoding": {
+        "0": "No",
+        "1": "Yes"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "race_other",
+      "title": "Race: Other",
+      "type": "any",
+      "description": "[Other] What is your race? SELECT ALL THAT APPLY",
+      "trueValues": [
+        "Yes"
+      ],
+      "falseValues": [
+        "No"
+      ],
+      "original_name": "d3_other",
+      "constraints": {
+        "required": true
+      },
+      "encoding": {
+        "0": "No",
+        "1": "Yes"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "race_AI_tribe",
+      "title": "Race: American indian principal tribe or community specified",
+      "type": "string",
+      "description": "[American indian principal tribe or community specified] What is your race? SELECT ALL THAT APPLY",
+      "original_name": "d3_specify_tribe",
+      "constraints": {
+        "maxLength": 80
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "race_other_specified",
+      "title": "Race: Other specified",
+      "type": "string",
+      "description": "[Other specified] What is your race? SELECT ALL THAT APPLY",
+      "original_name": "d3_specify_other",
+      "constraints": {
+        "maxLength": 80
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "hispanic_latino",
+      "title": "Hispanic, Latino, or Spanish Origin",
+      "type": "any",
+      "description": "Are you of Hispanic, Latino, or Spanish origin?",
+      "trueValues": [
+        "Yes"
+      ],
+      "falseValues": [
+        "No"
+      ],
+      "original_name": "d2",
+      "constraints": {
+        "required": true
+      },
+      "encoding": {
+        "0": "No",
+        "1": "Yes"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "sex_orient_category",
+      "title": "Sexual orientation",
+      "type": "any",
+      "description": "Sexual orientation:  Do you think of yourself asâ€¦",
+      "constraints": {
+        "enum": [
+          1,
+          2,
+          3,
+          4,
+          99
+        ]
+      },
+      "original_name": "d4c",
+      "encoding": {
+        "1": "Straight or heterosexual",
+        "2": "Lesbian or gay",
+        "3": "Bisexual",
+        "4": "Queer,pansexual, and/or questioning",
+        "99": "Something else"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "sex_orient_other",
+      "title": "Sexual orientation:  Other specified",
+      "type": "string",
+      "description": "Sexual orientation:  Do you think of yourself asâ€¦",
+      "original_name": "d4c_specify_other"
+    },
+    {
+      "module": "Demographics",
+      "name": "ever_pregnant",
+      "title": "Ever pregnant",
+      "type": "any",
+      "description": "Have you ever been pregnant?",
+      "constraints": {
+        "enum": [
+          1,
+          2,
+          4,
+          5,
+          6,
+          "Don't know"
+        ]
+      },
+      "original_name": "d4d",
+      "notes": "Does this just apply to that past 90 days?  If not, then the participant should be able to check more than one response.",
+      "encoding": {
+        "1": "Never been pregnant",
+        "2": "Currently pregnant",
+        "4": "Previously pregnant, had a child",
+        "5": "Previously pregnant, did not have a child",
+        "6": "Not applicable"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "marital_status",
+      "title": "Marital status",
+      "type": "any",
+      "description": "What is your marital status?",
+      "constraints": {
+        "enum": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "original_name": "d5",
+      "encoding": {
+        "1": "Married",
+        "2": "Widowed",
+        "3": "Divorced",
+        "4": "Separated",
+        "5": "Never married"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "living_as_married",
+      "title": "Married with partner",
+      "type": "any",
+      "description": "Are you currently living as married with a romantic partner?",
+      "constraints": {
+        "enum": [
+          1,
+          2
+        ]
+      },
+      "original_name": "d5a",
+      "encoding": {
+        "1": "Yes, I am living as married with partner",
+        "2": "No, I am not living as married with partner"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "educ_category",
+      "title": "Education",
+      "type": "any",
+      "description": "What is the highest grade or level of school you have completed or the highest degree you have received?",
+      "constraints": {
+        "enum": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          99
+        ]
+      },
+      "original_name": "d6",
+      "encoding": {
+        "1": "Did not complete high school",
+        "2": "GED or equivalent",
+        "3": "Regular high school diploma",
+        "4": "Some college credit but less than 1 year of college credit",
+        "5": "1 or more years of college credit but no degree",
+        "6": "Associate's degree (e.g., AA or AS)",
+        "7": "Bachelor's degree (e.g.,  BA or BS)",
+        "8": "Graduate degree (e.g., MSW, MA, MS, JD, MD, DSW, EdD, PhD)",
+        "99": "Other (specify)"
+      }
+    },
+    {
+      "module": "Demographics",
+      "name": "educ_highest_grade",
+      "title": "Education:  Highest grade level (if less than GED or h.s. diploma)",
+      "type": "integer",
+      "description": "What is the highest grade completed?",
+      "original_name": "d6_grade"
+    },
+    {
+      "module": "Demographics",
+      "name": "educ_other_specified",
+      "title": "Education: Other specified",
+      "type": "string",
+      "description": "What is the highest grade or level of school you have completed or the highest degree you have received?",
+      "original_name": "d6_specify_other"
+    },
+    {
+      "module": "MOUD",
+      "name": "intv_while_incarc",
+      "title": "Interviewed during incarceration",
+      "type": "any",
+      "description": "Interview conducted with participant during incarceration?",
+      "trueValues": [
+        "Yes"
+      ],
+      "falseValues": [
+        "No"
+      ],
+      "original_name": "u14f",
+      "encoding": {
+        "0": "No",
+        "1": "Yes"
+      }
+    },
+    {
+      "module": "MOUD",
+      "name": "days_incarcerated_interval",
+      "title": "Days incarcerated (in past 30/xx days)",
+      "type": "integer",
+      "description": "During the past xx/30 days, how many days have you been incarcerated?",
+      "original_name": "u14g"
+    },
+    {
+      "module": "MOUD",
+      "name": "ever_rx_moud",
+      "title": "Medication ever prescribed for opioid use disorder?",
+      "type": "any",
+      "description": "Have you ever been prescribed and taken medication to treat opioid use disorder?  (Illicit use should be excluded.)",
+      "trueValues": [
+        "Yes"
+      ],
+      "falseValues": [
+        "No"
+      ],
+      "original_name": "u15",
+      "encoding": {
+        "0": "No",
+        "1": "Yes"
+      }
+    },
+    {
+      "module": "MOUD",
+      "name": "months_daily_bup",
+      "title": "Buprenorphine-naloxone or buprenorphine daily sublingual: Lifetime months",
+      "type": "integer",
+      "description": "Lifetime months (buprenorphine-naloxone or buprenorphine daily sublingual [e.g., Suboxone film or tablet, generic films or tablets, or Subutex tablets])",
+      "original_name": "u15a1"
+    },
+    {
+      "module": "MOUD",
+      "name": "months_sublocade",
+      "title": "Buprenorphine injection (Sublocade):  Lifetime months",
+      "type": "integer",
+      "description": "Lifetime months (buprenorphine injection [Sublocade])",
+      "original_name": "u15b1"
+    },
+    {
+      "module": "MOUD",
+      "name": "months_weekly_brixadi",
+      "title": "Buprenorphine  weekly injection (Brixadi):  Lifetime months",
+      "type": "integer",
+      "description": "Lifetime months (buprenorphine weekly injection [Brixadi])",
+      "original_name": "u15c1"
+    },
+    {
+      "module": "MOUD",
+      "name": "months_monthly_brixadi",
+      "title": "Buprenorphine  monthly injection (Brixadi):  Lifetime months",
+      "type": "integer",
+      "description": "Lifetime months (buprenorphine monthly injection [Brixadi])",
+      "original_name": "u15d1"
+    },
+    {
+      "module": "MOUD",
+      "name": "months_probuphine_implant",
+      "title": "Buprenorphine 6-month implant (Probuphine):  Lifetime months",
+      "type": "integer",
+      "description": "Lifetime months (buprenorphine 6-month implant [Probuphine])",
+      "original_name": "u15e1"
+    },
+    {
+      "module": "MOUD",
+      "name": "months_daily_ntx",
+      "title": "Naltrexone daily (oral):  Lifetime months",
+      "type": "integer",
+      "description": "Lifetime months (Naltrexone daily (oral))",
+      "original_name": "u15f1"
+    },
+    {
+      "module": "MOUD",
+      "name": "months_monthly_vivitrol",
+      "title": "Naltrexone monthly injection (Vivitrol):  Lifetime months",
+      "type": "integer",
+      "description": "Lifetime months (Naltrexone monthly injection [Vivitrol])",
+      "original_name": "u15g1"
+    },
+    {
+      "module": "MOUD",
+      "name": "months_methadone",
+      "title": "Methadone daily:  Lifetime months",
+      "type": "integer",
+      "description": "Lifetime months (methadone daily)",
+      "original_name": "u15h1"
+    }
+  ],
+  "primaryKey": [
+    "jdc_person_id"
+  ],
+  "missingValues": [
+    "-95",
+    "-96",
+    "-97",
+    "-98",
+    "-99"
+  ],
+  "encoding": {
+    "-95": "Don't know",
+    "-96": "Refused",
+    "-97": "Left blank",
+    "-98": "Legitimately skipped",
+    "-99": "Missing"
+  }
+}
