@@ -74,6 +74,7 @@ class CoreMeasures:
             "replace_ids",
             "shift_dates",
         ],
+        **kwargs
     ):
         # resolve paths just in case directories change
         # note, check that this is a directory in case the input
