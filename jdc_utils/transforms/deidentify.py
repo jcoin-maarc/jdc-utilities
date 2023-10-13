@@ -10,7 +10,7 @@ import re
 from collections import OrderedDict
 from functools import reduce
 from pathlib import Path
-
+import copy
 import git
 import numpy as np
 import pandas as pd
@@ -116,7 +116,7 @@ def shift_dates(df, id_column, date_columns, history_path, seed=None):
     ids = df[id_column]
     offsets_map_file = versioned_filenames["shift_dates"]
     offsets_history_path = history_path.joinpath(offsets_map_file).with_suffix(".git")
-
+    date_columns = copy.deepcopy(date_columns)
     offsets = tools.date_offset(
         key=ids,
         offset_file=offsets_map_file,
@@ -127,7 +127,7 @@ def shift_dates(df, id_column, date_columns, history_path, seed=None):
 
     if isinstance(date_columns, str):
         date_columns = [date_columns]
-    elif isinstance(date_columns, tuple):
+    elif isinstance(date_columns,tuple):
         date_columns = list(date_columns)
 
     for col in date_columns:
