@@ -36,6 +36,7 @@ recode_map = {
         "Transgender woman/trans woman/male-to-female (MTF)": "Transgender",
         "Genderqueer/gender nonconforming/neither exclusively male nor female": "Gender nonconforming",
         "Additional gender category (or other)": "Something else",
+        None:"Not reported"
     },
     # "current_study_status": {"Unknown": "On study"},
 }
