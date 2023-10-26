@@ -209,73 +209,71 @@ class CoreMeasures:
 
         # write SPSS/Stata files if valid package
         if self.written_package_report["valid"]:
-            ## copy package so trgt pckgs not added to iterator
-            sourcepackage = self.written_package.to_copy()
-            for source in sourcepackage["resources"]:
-                source_path = Path(source["path"])
+            print("WARNING: package not valid, see the report-summary.txt file")
 
-                target_spss_path = f"data/{source['name']}.sav"
-                target_stata_path = f"data/{source['name']}.dta"
-                target_spss_schemapath = f"schemas/{source['name']}-sav.json"
-                target_stata_schemapath = f"schemas/{source['name']}-dta.json"
+        
+        ## copy package so trgt pckgs not added to iterator
+        sourcepackage = self.written_package.to_copy()
+        for source in sourcepackage["resources"]:
+            source_path = Path(source["path"])
 
-                # TODO: test to see if instantiating new Resource is needed (may not be given the iterator is now copied)
-                target_spss = Resource(
-                    path=str(source.path), schema=dict(source.schema)
-                )
-                target_spss = target_spss.transform(
-                    steps=[
-                        encode_table(
-                            encodings=encodings.fields,
-                            reservecodes=encodings.reserve["spss"],
-                        )
-                    ]
-                )
-                # TODO: test to see if instantiating new Resource is needed (may not be given the iterator is now copied)
-                target_stata = Resource(
-                    path=str(source.path), schema=dict(source.schema)
-                )
-                target_stata = target_stata.transform(
-                    steps=[
-                        encode_table(
-                            encodings=encodings.fields,
-                            reservecodes=encodings.reserve["stata"],
-                        )
-                    ]
-                )
+            target_spss_path = f"data/{source['name']}.sav"
+            target_stata_path = f"data/{source['name']}.dta"
+            target_spss_schemapath = f"schemas/{source['name']}-sav.json"
+            target_stata_schemapath = f"schemas/{source['name']}-dta.json"
 
-                target_spss.infer()
-                target_stata.infer()
-
-                target_spss.write(target_spss_path)
-                target_stata.write(target_stata_path)
-                target_spss.schema.to_json(target_spss_schemapath)
-                target_stata.schema.to_json(target_stata_schemapath)
-
-                target_resource_spss = Resource(
-                    name=f"{source['name']}-sav",
-                    title="SPSS (.sav) dataset",
-                    description="This is an annotated SPSS dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
-                    path=target_spss_path,
-                    # schema=target_spss_schemapath #No validation/read stream yet (need to add to dataforge)
-                )
-                target_resource_stata = Resource(
-                    name=f"{source['name']}-dta",
-                    title="Stata (.dta) dataset",
-                    description="This is an annotated Stata dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
-                    path=target_stata_path,
-                    # schema=target_stata_schemapath #No validation/read stream yet (need to add to dataforge)
-                )
-                self.written_package.add_resource(target_resource_spss)
-                self.written_package.add_resource(target_resource_stata)
-
-            self.written_package.to_json("data-package.json")
-
-        else:
-            print(
-                f"Package not valid so not generating spss and stata files. Check report summary"
+            # TODO: test to see if instantiating new Resource is needed (may not be given the iterator is now copied)
+            target_spss = Resource(
+                path=str(source.path), schema=dict(source.schema)
+            )
+            target_spss = target_spss.transform(
+                steps=[
+                    encode_table(
+                        encodings=encodings.fields,
+                        reservecodes=encodings.reserve["spss"],
+                    )
+                ]
+            )
+            # TODO: test to see if instantiating new Resource is needed (may not be given the iterator is now copied)
+            target_stata = Resource(
+                path=str(source.path), schema=dict(source.schema)
+            )
+            target_stata = target_stata.transform(
+                steps=[
+                    encode_table(
+                        encodings=encodings.fields,
+                        reservecodes=encodings.reserve["stata"],
+                    )
+                ]
             )
 
+            target_spss.infer()
+            target_stata.infer()
+
+            target_spss.write(target_spss_path)
+            target_stata.write(target_stata_path)
+            target_spss.schema.to_json(target_spss_schemapath)
+            target_stata.schema.to_json(target_stata_schemapath)
+
+            target_resource_spss = Resource(
+                name=f"{source['name']}-sav",
+                title="SPSS (.sav) dataset",
+                description="This is an annotated SPSS dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
+                path=target_spss_path,
+                # schema=target_spss_schemapath #No validation/read stream yet (need to add to dataforge)
+            )
+            target_resource_stata = Resource(
+                name=f"{source['name']}-dta",
+                title="Stata (.dta) dataset",
+                description="This is an annotated Stata dataset. To see the schema with the value labels (encoding) and variable labels (title), see `schemas/<tablename>-sav.json`",
+                path=target_stata_path,
+                # schema=target_stata_schemapath #No validation/read stream yet (need to add to dataforge)
+            )
+            self.written_package.add_resource(target_resource_spss)
+            self.written_package.add_resource(target_resource_stata)
+
+        self.written_package.to_json("data-package.json")
+        
         os.chdir(self.basedir)
 
         return self
@@ -298,6 +296,7 @@ class CoreMeasures:
         commons_file_submitter_id,
         commons_credentials_path="credentials.json",
         zipped_package_path=None,
+        **kwargs
     ):
         """
         submission and mapping to sheepdog and file upload
