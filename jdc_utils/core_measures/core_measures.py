@@ -107,7 +107,7 @@ class CoreMeasures:
         steps = self.transform_steps
         resource = self._generate_resource(df_or_path, name, schema, steps)
         # derived measures
-        resource.data = derived_measures.promis.compute_scores(resource)
+        #resource.data = derived_measures.promis.compute_scores(resource)
         self.package.add_resource(resource)
 
     def add_staff_baseline(self, df_or_path):
