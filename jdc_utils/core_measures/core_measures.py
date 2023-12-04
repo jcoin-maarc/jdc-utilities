@@ -90,10 +90,12 @@ class CoreMeasures:
         self.package = Package()
         self.sheepdog_package = Package()
 
+        self.schemas = schemas
+
     # user facing functions to build core measure data package, writing the package, and submitting to JDC
     def add_baseline(self, df_or_path):
         name = "baseline"
-        schema = schemas.baseline
+        schema = self.schemas.baseline
         steps = self.transform_steps
         resource = self._generate_resource(df_or_path, name, schema, steps)
 
@@ -103,7 +105,7 @@ class CoreMeasures:
 
     def add_timepoints(self, df_or_path):
         name = "timepoints"
-        schema = schemas.timepoints
+        schema = self.schemas.timepoints
         steps = self.transform_steps
         resource = self._generate_resource(df_or_path, name, schema, steps)
         # derived measures
@@ -112,14 +114,14 @@ class CoreMeasures:
 
     def add_staff_baseline(self, df_or_path):
         name = "staff-baseline"
-        schema = schemas.staff_baseline
+        schema = self.schemas.staff_baseline
         steps = self.transform_steps
         resource = self._generate_resource(df_or_path, name, schema, steps)
         self.package.add_resource(resource)
 
     def add_staff_timepoints(self, df_or_path):
         name = "staff-timepoints"
-        schema = schemas.staff_timepoints
+        schema = self.schemas.staff_timepoints
         steps = self.transform_steps
         resource = self._generate_resource(df_or_path, name, schema, steps)
         self.package.add_resource(resource)
