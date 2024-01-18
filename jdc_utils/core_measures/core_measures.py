@@ -100,7 +100,12 @@ class CoreMeasures:
         resource = self._generate_resource(df_or_path, name, schema, steps)
 
         # derived measures
-        # TODO: race
+        resource.data = (
+            pd.DataFrame(resource.data)
+            .pipe(derived_measures.combine_race)
+            .pipe(derived_measures.map_gender_id_condensed)
+
+        )
         self.package.add_resource(resource)
 
     def add_timepoints(self, df_or_path):
@@ -117,6 +122,12 @@ class CoreMeasures:
         schema = self.schemas.staff_baseline
         steps = self.transform_steps
         resource = self._generate_resource(df_or_path, name, schema, steps)
+        resource.data = (
+            pd.DataFrame(resource.data)
+            .pipe(derived_measures.combine_race)
+            .pipe(derived_measures.map_gender_id_condensed)
+
+        )
         self.package.add_resource(resource)
 
     def add_staff_timepoints(self, df_or_path):
