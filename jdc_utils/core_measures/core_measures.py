@@ -464,6 +464,7 @@ class CoreMeasures:
 
         # chain through selected functions
         newdf = reduce(lambda _df, fxn: fxn[0](_df, **fxn[-1]), fxns.values(), df)
+        newdf.fillna("Missing",inplace=True)
         # make resource
         resource = Resource(name=name, data=newdf, schema=schema, format="pandas")
         return resource
