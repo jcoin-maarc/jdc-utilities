@@ -312,28 +312,15 @@ class CoreMeasures:
         **kwargs
     ):
         """
-        submission and mapping to sheepdog and file upload
+        submission and mapping to sheepdog and file upload.
 
-        Note, this function assumes there exists a record already in the
-        commons for this particular hub's core measure data package.
+        If `commons_file_guid` (aka the object id etc) is specified,
+        assumes you are updating an exisiting record. If specified as None,
+        it will create a new record with a newly minted guid.
 
-        If this is a first time upload, please upload with gen3 client
-        and map via gui or use following function:
+        NOTE: Both options have prompts to make sure you want to continue with upload.
 
-        ```python
-        from jdc_utils.submission import submit_package_to_jdc
 
-        gen3_file = submit_package_to_jdc(
-            package_path=zip_path,
-            commons_project=commons_project,
-            sheepdog_file_submitter_id=commons_file_submitter_id,
-            sheepdog_data_type="Interview",
-            sheepdog_data_category="Core Measures",
-            sheepdog_data_format="ZIP",
-            submission_type="create",
-            sheepdog_other_cmc_node_metadata={"title": "Core Measures"},
-            credentials_path=credentials_path,
-        )
         ```
         Parameters
         -----------------
@@ -361,28 +348,39 @@ class CoreMeasures:
                 f"Submit an updated version of an existing data package with {commons_file_guid}? Y/N"
             )
             submission_type = "update"
+            if confirmation.strip().lower() == "y":
+                # submit the zipped package to JDC
+                gen3_file = submit_package_to_jdc(
+                    package_path=self.zipped_package_path,
+                    commons_project=commons_project_code,
+                    file_guid=commons_file_guid,
+                    sheepdog_file_submitter_id=commons_file_submitter_id,
+                    submission_type=submission_type,
+                    credentials_path=commons_credentials_path,
+                )
+            else:
+                raise Exception("Aborted JDC submission process")        
         else:
-            confirmation = input(f"Submit a new file? Y/N")
+            confirmation = input(f"Submit a new file? BE CAREFUL: this will create a new guid. Y/N")
+            
             submission_type = "create"
-            # assert (
-            #     commons_file_guid
-            # ), "To update an existing data package, you need the file_guid attached to the package"
+            if confirmation.strip().lower() == "y":
+                gen3_file = submit_package_to_jdc(
+                    package_path=self.zipped_package_path,
+                    commons_project=commons_project_code,
+                    sheepdog_file_submitter_id=commons_file_submitter_id,
+                    sheepdog_data_type="Interview",
+                    sheepdog_data_category="Core Measures",
+                    sheepdog_data_format="ZIP",
+                    submission_type=submission_type,
+                    sheepdog_other_cmc_node_metadata={"title": "Core Measures"},
+                    credentials_path=commons_credentials_path,
+                )
+            else:
+                raise Exception("Aborted JDC submission process")
 
-        if confirmation.strip().lower() == "y":
-            # submit the zipped package to JDC
-            gen3_file = submit_package_to_jdc(
-                package_path=self.zipped_package_path,
-                commons_project=commons_project_code,
-                file_guid=commons_file_guid,
-                sheepdog_file_submitter_id=commons_file_submitter_id,
-                submission_type=submission_type,
-                credentials_path=commons_credentials_path,
-            )
-
-            self.commons_project_code = commons_project_code
-            self.map_to_sheepdog(commons_project_code, commons_credentials_path)
-        elif confirmation.strip().lower() == "n":
-            raise Exception("Aborted JDC submission process")
+        # after file uploaded and mapped, map the data to sheepdog
+        self.map_to_sheepdog(commons_project_code, commons_credentials_path)
 
     def map_to_sheepdog(
         self,
