@@ -53,7 +53,7 @@ class CoreMeasures:
         Directory to write core measure package
     transform_steps: the transformation functions to be applied (and the order of) upon adding a data resource.
         Currently available functions include: [
-            "add_new_names",
+            "sync_new_names" ,
             "add_missing_fields",
             "replace_ids",
             "shift_dates",
