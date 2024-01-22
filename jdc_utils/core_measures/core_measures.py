@@ -232,8 +232,8 @@ class CoreMeasures:
 
             target_spss_path = f"data/{source['name']}.sav"
             target_stata_path = f"data/{source['name']}.dta"
-            target_spss_schemapath = f"schemas/{source['name']}-sav.json"
-            target_stata_schemapath = f"schemas/{source['name']}-dta.json"
+            # target_spss_schemapath = f"schemas/{source['name']}-sav.json"
+            # target_stata_schemapath = f"schemas/{source['name']}-dta.json"
 
             # TODO: test to see if instantiating new Resource is needed (may not be given the iterator is now copied)
             target_spss = Resource(
@@ -265,8 +265,8 @@ class CoreMeasures:
 
             target_spss.write(target_spss_path)
             target_stata.write(target_stata_path)
-            target_spss.schema.to_json(target_spss_schemapath)
-            target_stata.schema.to_json(target_stata_schemapath)
+            # target_spss.schema.to_json(target_spss_schemapath)
+            # target_stata.schema.to_json(target_stata_schemapath)
 
             target_resource_spss = Resource(
                 name=f"{source['name']}-sav",
