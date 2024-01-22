@@ -421,7 +421,8 @@ class CoreMeasures:
     @staticmethod
     def __add_new_names(df, schema):
         fields = schema["fields"]
-        mappings = {field["original_name"]: field["name"] for field in fields}
+        mappings = {field.get("custom").get("jcoin:original_name"): field["name"] for field in fields 
+            if field.get("custom",{}).get("jcoin:original_name")}
         return to_new_names(df=df, mappings=mappings)
 
     @staticmethod
