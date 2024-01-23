@@ -25,10 +25,7 @@ def combine_race(df):
         "fillna": "Missing",
     }
 
-    missing_var = (df.get("race",pd.Series()).isin(["Missing",None,pd.NA,""])).sum() == len(df)
-
-    if missing_var:
-        df["race"] = collapse_checkall(df, **collapse_checkall_params,inplace=False)
+    df["race"] = collapse_checkall(df, **collapse_checkall_params,inplace=False)
 
     return df
 
@@ -41,16 +38,16 @@ def map_gender_id_condensed(df):
     """
 
     df = pd.DataFrame(df)
-    missing_var = (df.get("gender_id_condensed",pd.Series()).isin(["Missing",None,pd.NA])).sum() == len(df)
-    if missing_var:
-        df["gender_id_condensed"] = df["gender_id"].replace(
-            {
-                "Transgender man/trans man/female-to-male (FTM)":"Transgender",
-                "Transgender woman/trans woman/male-to-female (MTF)":"Transgender",
-                "Genderqueer/gender nonconforming/neither exclusively male nor female":"Gender nonconforming",
-                "Additional gender category (or other)":"Something else"
-            }
-        )
+    gender_id_condensed = df["gender_id"].replace(
+        {
+            "Transgender man/trans man/female-to-male (FTM)":"Transgender",
+            "Transgender woman/trans woman/male-to-female (MTF)":"Transgender",
+            "Genderqueer/gender nonconforming/neither exclusively male nor female":"Gender nonconforming",
+            "Additional gender category (or other)":"Something else"
+        }
+    )
+
+    df.gender_id_condensed.where(lambda s:s!="Missing",gender_id_condensed,inplace=True)
 
     return df
 
