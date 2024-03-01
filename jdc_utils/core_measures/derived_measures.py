@@ -24,8 +24,14 @@ def combine_race(df):
         "checked": "Yes",
         "fillna": "Missing",
     }
+    has_race = "race" in df
+    all_missing = df.get("race",pd.Series("Missing")).eq("Missing").sum() == len(df)
+    all_na = df.get("race",pd.Series(pd.NA)).isna().sum() == len(df)
 
-    df["race"] = collapse_checkall(df, **collapse_checkall_params,inplace=False)
+    if all_missing or all_na:
+        df["race"] = collapse_checkall(df, **collapse_checkall_params,inplace=False)
+    else:
+        print("race variable already calculated")
 
     return df
 
