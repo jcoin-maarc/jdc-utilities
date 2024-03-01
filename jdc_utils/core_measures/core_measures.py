@@ -69,7 +69,7 @@ class CoreMeasures:
         date_columns=None,
         outdir=None,
         transform_steps=[
-            "add_new_names",
+            "sync_new_names",# same as `"add_new_names"` but both kept for bckwards compat
             "add_missing_fields",
             "replace_ids",
             "shift_dates",
