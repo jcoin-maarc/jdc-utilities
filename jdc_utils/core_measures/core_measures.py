@@ -221,7 +221,7 @@ class CoreMeasures:
         Path("report-summary.txt").write_text(self.written_package_report.to_summary())
 
         # write SPSS/Stata files if valid package
-        if self.written_package_report["valid"]:
+        if not self.written_package_report["valid"]:
             print("WARNING: package not valid, see the report-summary.txt file")
 
         
